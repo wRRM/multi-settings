@@ -1,0 +1,14 @@
+[build-system]
+requires = ["meson-python>=0.16"]
+build-backend = "mesonpy"
+
+[project]
+name = "multi-settings"
+version = "0.1.0"
+description = "Ubuntu user, YubiKey, and hardening administration"
+requires-python = ">=3.12"
+dependencies = ["PyGObject>=3.48", "PyYAML>=6.0"]
+license = {text = "GPL-3.0-or-later"}
+
+[project.scripts]
+multi-settings = "multi_settings.__main__:main"

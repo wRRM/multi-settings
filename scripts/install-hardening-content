@@ -1,0 +1,13 @@
+#!/bin/sh
+set -eu
+
+if [ "$(id -u)" -ne 0 ]; then
+  echo "Run this installer as root." >&2
+  exit 77
+fi
+
+install -d -m 0755 /usr/share/multi-settings/collections
+exec ansible-galaxy collection install \
+  --force \
+  --collections-path /usr/share/multi-settings/collections \
+  --requirements-file /usr/share/multi-settings/ansible/requirements.yml

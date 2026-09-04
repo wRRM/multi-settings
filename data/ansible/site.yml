@@ -1,0 +1,11 @@
+---
+- name: Audit and harden this Ubuntu workstation
+  hosts: localhost
+  connection: local
+  gather_facts: true
+  become: false
+  roles:
+    - role: devsec.hardening.os_hardening
+      tags: [os_hardening]
+    - role: devsec.hardening.ssh_hardening
+      tags: [ssh_hardening]

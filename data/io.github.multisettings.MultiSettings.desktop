@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=Multi Settings
+Comment=Prepare and harden an Ubuntu workstation
+Exec=multi-settings
+Icon=io.github.multisettings.MultiSettings
+Terminal=false
+Type=Application
+Categories=Settings;Security;
+Keywords=users;yubikey;security;hardening;ansible;
+StartupNotify=true

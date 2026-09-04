@@ -1,0 +1,4 @@
+#!/usr/bin/python3
+from multi_settings.helper import main
+
+raise SystemExit(main())
