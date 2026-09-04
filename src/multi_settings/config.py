@@ -3,7 +3,7 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-APP_ID = "io.github.multisettings.MultiSettings"
+APP_ID = "io.github.wrrm.multisettings"
 APP_NAME = "Multi Settings"
 POLKIT_ACTION = f"{APP_ID}.manage"
 HELPER_PATH = Path(os.environ.get("MULTI_SETTINGS_HELPER", "/usr/libexec/multi-settings-helper"))
@@ -19,6 +19,13 @@ PLAYBOOK_PATH = DATA_DIR / "ansible/site.yml"
 CALLBACK_DIR = DATA_DIR / "ansible/callback_plugins"
 COLLECTIONS_PATH = DATA_DIR / "collections"
 HARDENING_COLLECTION_VERSION = "10.6.0"
+ANSIBLE_COLLECTIONS_PATH = ":".join(
+    (
+        str(COLLECTIONS_PATH),
+        "/usr/share/ansible/collections",
+        "/usr/lib/python3/dist-packages",
+    )
+)
 
 PAM_ORIGIN = "pam://multi-settings"
 PAM_MARKER_START = "# BEGIN MULTI SETTINGS YUBIKEY"

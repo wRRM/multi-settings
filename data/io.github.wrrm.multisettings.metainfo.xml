@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <component type="desktop-application">
-  <id>io.github.multisettings.MultiSettings</id>
+  <id>io.github.wrrm.multisettings</id>
   <name>Multi Settings</name>
   <summary>Prepare and harden Ubuntu workstations</summary>
-  <developer id="io.github.multisettings">
+  <developer id="io.github.wrrm">
     <name>Multi Settings Contributors</name>
   </developer>
   <metadata_license>CC0-1.0</metadata_license>
@@ -12,7 +12,8 @@
     <p>Create local users, enroll YubiKeys, enforce two-factor PAM authentication,
     and audit or apply DevSec OS and SSH hardening from a native GTK application.</p>
   </description>
-  <launchable type="desktop-id">io.github.multisettings.MultiSettings.desktop</launchable>
+  <launchable type="desktop-id">io.github.wrrm.multisettings.desktop</launchable>
+  <url type="homepage">https://github.com/wRRM/multi-settings</url>
   <content_rating type="oars-1.1"/>
   <releases>
     <release version="0.1.0" date="2026-09-04"/>

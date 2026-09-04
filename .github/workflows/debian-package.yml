@@ -1,0 +1,106 @@
+name: Debian package
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  workflow_dispatch:
+
+concurrency:
+  group: debian-package-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build Ubuntu 26.04 package
+    runs-on: ubuntu-26.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends \
+            ansible-core \
+            build-essential \
+            ca-certificates \
+            curl \
+            debhelper \
+            desktop-file-utils \
+            dh-python \
+            devscripts \
+            libadwaita-1-dev \
+            libgtk-4-dev \
+            lintian \
+            meson \
+            ninja-build \
+            pkgconf \
+            python3-all \
+            python3-yaml
+
+      - name: Verify release version
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          package_version="$(dpkg-parsechangelog --show-field Version)"
+          test "${GITHUB_REF_NAME}" = "v${package_version}"
+
+      - name: Fetch pinned hardening collection
+        run: ./scripts/fetch-hardening-content
+
+      - name: Build binary package
+        run: dpkg-buildpackage --build=binary --unsigned-changes
+
+      - name: Collect and inspect package
+        run: |
+          mkdir -p artifacts
+          cp ../multi-settings_*.deb ../multi-settings_*.buildinfo ../multi-settings_*.changes artifacts/
+          dpkg-deb --info artifacts/multi-settings_*.deb
+          dpkg-deb --contents artifacts/multi-settings_*.deb
+          cd artifacts
+          sha256sum multi-settings_*.deb > SHA256SUMS
+          sha256sum --check SHA256SUMS
+
+      - name: Run Lintian
+        run: lintian --fail-on warning artifacts/multi-settings_*.changes
+
+      - name: Upload package artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: multi-settings-deb-${{ github.sha }}
+          path: artifacts/
+          if-no-files-found: error
+          retention-days: 30
+
+  release:
+    name: Publish tagged release
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: build
+    runs-on: ubuntu-26.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download verified package
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
+        with:
+          name: multi-settings-deb-${{ github.sha }}
+          path: artifacts
+
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${GITHUB_REF_NAME}" \
+            artifacts/multi-settings_*.deb \
+            artifacts/SHA256SUMS \
+            --repo "${GITHUB_REPOSITORY}" \
+            --verify-tag \
+            --generate-notes

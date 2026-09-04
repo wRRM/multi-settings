@@ -1,0 +1,18 @@
+#!/bin/sh
+set -eu
+
+version=10.6.0
+archive="devsec-hardening-${version}.tar.gz"
+download_url="https://galaxy.ansible.com/api/v3/plugin/ansible/content/published/collections/artifacts/${archive}"
+script_directory=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+project_root=$(dirname -- "${script_directory}")
+
+cd "${project_root}"
+
+mkdir -p vendor
+curl --fail --location --proto '=https' --tlsv1.2 \
+  --output "vendor/${archive}.partial" "${download_url}"
+expected_sha256=$(awk 'NF == 2 { print $1 }' "data/ansible/devsec-hardening-${version}.sha256")
+echo "${expected_sha256}  vendor/${archive}.partial" | sha256sum --check --strict
+mv "vendor/${archive}.partial" "vendor/${archive}"
+echo "Fetched and verified ${archive}."

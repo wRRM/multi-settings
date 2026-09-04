@@ -1,0 +1,20 @@
+#!/usr/bin/make -f
+
+export PYBUILD_NAME = multi-settings
+export DEB_BUILD_MAINT_OPTIONS = hardening=+all
+
+%:
+	dh $@ --buildsystem=meson --with python3
+
+override_dh_auto_install:
+	dh_auto_install
+	test -f vendor/devsec-hardening-10.6.0.tar.gz
+	cd vendor && sha256sum --check --strict ../data/ansible/devsec-hardening-10.6.0.sha256
+	ansible-galaxy collection install --force --no-deps \
+		--collections-path debian/multi-settings/usr/share/multi-settings/collections \
+		vendor/devsec-hardening-10.6.0.tar.gz
+	find debian/multi-settings/usr/share/multi-settings/collections \
+		-type f -name .gitmodules -delete
+
+override_dh_auto_test:
+	PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -B -m unittest discover -s tests -v

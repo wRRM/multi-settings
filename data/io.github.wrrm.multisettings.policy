@@ -3,7 +3,7 @@
   "http://www.freedesktop.org/standards/PolicyKit/1/policyconfig.dtd">
 <policyconfig>
   <vendor>Multi Settings</vendor>
-  <action id="io.github.multisettings.MultiSettings.manage">
+  <action id="io.github.wrrm.multisettings.manage">
     <description>Manage users, YubiKeys, PAM, or system hardening</description>
     <message>Administrator authentication is required to change system security settings.</message>
     <defaults>

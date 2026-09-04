@@ -53,6 +53,24 @@ Run the headless unit tests with:
 python3 -m unittest discover -s tests -v
 ```
 
+## Debian package
+
+GitHub Actions builds an Ubuntu 26.04 `Architecture: all` package after every
+push to `main`. The package and its SHA-256 checksum are available on the
+workflow run's **Artifacts** page for 30 days. Pushing a tag matching the Debian
+version, such as `v0.1.0`, also publishes the `.deb` and checksum on a GitHub
+Release.
+
+The package embeds the checksum-pinned DevSec hardening collection, so an
+installed application does not download executable content at runtime. To
+build the same package locally on Ubuntu 26.04:
+
+```sh
+sudo apt build-dep .
+./scripts/fetch-hardening-content
+dpkg-buildpackage --build=binary --unsigned-changes
+```
+
 ## Safety and recovery
 
 Multi Settings never edits `/etc/pam.d/common-auth`. It adds a clearly marked

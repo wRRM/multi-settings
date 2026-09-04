@@ -10,6 +10,7 @@ from typing import Any
 import yaml
 
 from multi_settings.config import (
+    ANSIBLE_COLLECTIONS_PATH,
     CALLBACK_DIR,
     COLLECTIONS_PATH,
     HARDENING_COLLECTION_VERSION,
@@ -96,7 +97,7 @@ def hardening_run(payload: dict[str, Any]) -> None:
         environment = dict(SAFE_ENVIRONMENT)
         environment.update(
             {
-                "ANSIBLE_COLLECTIONS_PATH": str(COLLECTIONS_PATH),
+                "ANSIBLE_COLLECTIONS_PATH": ANSIBLE_COLLECTIONS_PATH,
                 "ANSIBLE_CALLBACK_PLUGINS": str(CALLBACK_DIR),
                 "ANSIBLE_STDOUT_CALLBACK": "multi_settings_jsonl",
                 "ANSIBLE_FORCE_COLOR": "0",

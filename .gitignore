@@ -5,3 +5,12 @@ __pycache__/
 build/
 dist/
 *.egg-info/
+vendor/*.tar.gz
+vendor/*.partial
+debian/.debhelper/
+debian/debhelper-build-stamp
+debian/files
+debian/multi-settings/
+debian/multi-settings.debhelper.log
+debian/multi-settings.substvars
+debian/tmp/
