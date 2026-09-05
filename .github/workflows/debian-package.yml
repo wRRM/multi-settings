@@ -24,6 +24,12 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Restore pinned hardening collection
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: vendor/devsec-hardening-10.6.0.tar.gz
+          key: devsec-hardening-10.6.0-5adf0453b98002853fd5255879408a17d91b80073485e2e8355a3360d7b53f99
+
       - name: Install build dependencies
         run: |
           sudo apt-get update
@@ -51,7 +57,7 @@ jobs:
           package_version="$(dpkg-parsechangelog --show-field Version)"
           test "${GITHUB_REF_NAME}" = "v${package_version}"
 
-      - name: Fetch pinned hardening collection
+      - name: Import or fetch pinned hardening collection
         run: ./scripts/fetch-hardening-content
 
       - name: Build binary package

@@ -7,7 +7,27 @@ if [ "$(id -u)" -ne 0 ]; then
 fi
 
 install -d -m 0755 /usr/share/multi-settings/collections
+version=10.6.0
+archive="devsec-hardening-${version}.tar.gz"
+script_directory=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+project_root=$(dirname -- "${script_directory}")
+source_archive=${1:-"${project_root}/vendor/${archive}"}
+checksum_file="${project_root}/data/ansible/devsec-hardening-${version}.sha256"
+
+if [ ! -f "${source_archive}" ] || [ ! -f "${checksum_file}" ]; then
+  echo "Fetch or import the pinned archive before installing it." >&2
+  exit 66
+fi
+
+expected_sha256=$(awk 'NF == 2 { print $1 }' "${checksum_file}")
+actual_sha256=$(sha256sum -- "${source_archive}" | awk '{ print $1 }')
+if [ "${actual_sha256}" != "${expected_sha256}" ]; then
+  echo "Checksum verification failed for ${source_archive}" >&2
+  exit 65
+fi
+
 exec ansible-galaxy collection install \
   --force \
+  --no-deps \
   --collections-path /usr/share/multi-settings/collections \
-  --requirements-file /usr/share/multi-settings/ansible/requirements.yml
+  "${source_archive}"

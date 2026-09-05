@@ -1,3 +1,12 @@
+multi-settings (0.2.0) resolute; urgency=medium
+
+  * Add Swedish as the default interface language with an English toggle.
+  * Reorder the hardening, user, and YubiKey workflow.
+  * Support PIN-protected YubiKeys during enrollment.
+  * Cache or import the checksum-pinned DevSec Hardening collection.
+
+ -- Per Falk <45391836+wRRM@users.noreply.github.com>  Sat, 05 Sep 2026 23:06:02 +0200
+
 multi-settings (0.1.0) resolute; urgency=medium
 
   * Initial Ubuntu 26.04 package.

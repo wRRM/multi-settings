@@ -8,6 +8,7 @@ gi.require_version("Gtk", "4.0")
 from gi.repository import GLib, Gtk
 
 from multi_settings.domain.validation import ValidationError, validate_full_name, validate_password, validate_username
+from multi_settings.i18n import _
 from multi_settings.services.privileged import PrivilegedClient, PrivilegedResponse
 from multi_settings.services.system_users import SystemUserService
 from multi_settings.views.common import clear_box, form_row, page_title, section
@@ -22,26 +23,26 @@ class UsersPage(Gtk.Box):
         self.set_margin_bottom(32)
         self.set_margin_start(32)
         self.set_margin_end(32)
-        self.append(page_title("Users", "Create Ubuntu accounts without running the application as root."))
+        self.append(page_title(_("Users"), _("Create Ubuntu accounts without running the application as root.")))
 
-        existing, self.user_list = section("Interactive accounts")
+        existing, self.user_list = section(_("Interactive accounts"))
         self.append(existing)
 
         create, form = section(
-            "Create account",
-            "The account password is sent only to the local root helper over its private standard input.",
+            _("Create account"),
+            _("The account password is sent only to the local root helper over its private standard input."),
         )
-        self.username = Gtk.Entry(placeholder_text="username", width_chars=28)
-        self.full_name = Gtk.Entry(placeholder_text="Full name", width_chars=28)
+        self.username = Gtk.Entry(placeholder_text=_("username"), width_chars=28)
+        self.full_name = Gtk.Entry(placeholder_text=_("Full name"), width_chars=28)
         self.password = Gtk.PasswordEntry(show_peek_icon=True, width_chars=28)
         self.confirm = Gtk.PasswordEntry(show_peek_icon=True, width_chars=28)
         self.administrator = Gtk.Switch(valign=Gtk.Align.CENTER)
-        form.append(form_row("Username", self.username))
-        form.append(form_row("Full name", self.full_name))
-        form.append(form_row("Password", self.password))
-        form.append(form_row("Confirm password", self.confirm))
-        form.append(form_row("Administrator (sudo group)", self.administrator))
-        self.create_button = Gtk.Button(label="Create account", halign=Gtk.Align.END)
+        form.append(form_row(_("Username"), self.username))
+        form.append(form_row(_("Full name"), self.full_name))
+        form.append(form_row(_("Password"), self.password))
+        form.append(form_row(_("Confirm password"), self.confirm))
+        form.append(form_row(_("Administrator (sudo group)"), self.administrator))
+        self.create_button = Gtk.Button(label=_("Create account"), halign=Gtk.Align.END)
         self.create_button.add_css_class("suggested-action")
         self.create_button.set_margin_top(8)
         self.create_button.connect("clicked", self._create_user)
@@ -53,7 +54,7 @@ class UsersPage(Gtk.Box):
         clear_box(self.user_list)
         users = SystemUserService.list_interactive_users()
         if not users:
-            self.user_list.append(Gtk.Label(label="No interactive accounts found.", xalign=0))
+            self.user_list.append(Gtk.Label(label=_("No interactive accounts found."), xalign=0))
             return
         for user in users:
             row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
@@ -69,7 +70,7 @@ class UsersPage(Gtk.Box):
             detail.add_css_class("dim-label")
             names.append(detail)
             row.append(names)
-            badge = Gtk.Label(label="Administrator" if user.is_administrator else "Standard")
+            badge = Gtk.Label(label=_("Administrator") if user.is_administrator else _("Standard"))
             badge.add_css_class("accent" if user.is_administrator else "dim-label")
             row.append(badge)
             self.user_list.append(row)
@@ -80,7 +81,7 @@ class UsersPage(Gtk.Box):
             full_name = validate_full_name(self.full_name.get_text())
             password = validate_password(self.password.get_text())
             if password != self.confirm.get_text():
-                raise ValidationError("The passwords do not match.")
+                raise ValidationError(_("The passwords do not match."))
         except ValidationError as error:
             self.notify(str(error))
             return

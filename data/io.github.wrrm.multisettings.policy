@@ -5,7 +5,9 @@
   <vendor>Multi Settings</vendor>
   <action id="io.github.wrrm.multisettings.manage">
     <description>Manage users, YubiKeys, PAM, or system hardening</description>
+    <description xml:lang="sv">Hantera användare, YubiKeys, PAM eller systemhärdning</description>
     <message>Administrator authentication is required to change system security settings.</message>
+    <message xml:lang="sv">Administratörsautentisering krävs för att ändra systemets säkerhetsinställningar.</message>
     <defaults>
       <allow_any>no</allow_any>
       <allow_inactive>no</allow_inactive>

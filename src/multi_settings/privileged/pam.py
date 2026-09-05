@@ -15,6 +15,7 @@ from multi_settings.config import (
     SUDO_PAM_SERVICES,
 )
 from multi_settings.domain.validation import ValidationError
+from multi_settings.i18n import _
 from multi_settings.privileged.protocol import atomic_write, emit
 from multi_settings.privileged.state import load_state, save_state
 from multi_settings.privileged.users import administrator_names, interactive_user_names
@@ -45,13 +46,13 @@ def with_managed_pam_block(content: str) -> str:
             )
             lines.insert(index + 1, block)
             return "".join(lines)
-    raise ValidationError("PAM service does not include common-auth; refusing an unsafe edit.")
+    raise ValidationError(_("PAM service does not include common-auth; refusing an unsafe edit."))
 
 
 def write_pam_service(service: str, enabled: bool) -> None:
     path = PAM_DIRECTORY / service
     if not path.is_file() or path.is_symlink():
-        raise ValidationError(f"PAM service {service!r} is unavailable.")
+        raise ValidationError(_("PAM service {service!r} is unavailable.").format(service=service))
     content = path.read_text(encoding="utf-8")
     updated = with_managed_pam_block(content) if enabled else without_managed_pam_block(content)
     if updated == content:
@@ -67,7 +68,7 @@ def configure_pam(payload: dict[str, Any]) -> None:
     login_enabled = payload.get("login") is True
     sudo_enabled = payload.get("sudo") is True
     if (login_enabled or sudo_enabled) and not any(path.exists() for path in PAM_MODULE_CANDIDATES):
-        raise ValidationError("libpam-u2f is not installed.")
+        raise ValidationError(_("libpam-u2f is not installed."))
     state = load_state()
     enrolled_users = {item.get("username") for item in state.get("enrollments", [])}
     required_users: set[str] = set()
@@ -78,15 +79,15 @@ def configure_pam(payload: dict[str, Any]) -> None:
     missing = sorted(required_users - enrolled_users)
     if missing:
         raise ValidationError(
-            "Refusing to enable a lockout-prone PAM policy. Enroll a key for: " + ", ".join(missing)
+            _("Refusing to enable a lockout-prone PAM policy. Enroll a key for: {users}").format(users=", ".join(missing))
         )
 
     login_services = [service for service in LOGIN_PAM_SERVICES if (PAM_DIRECTORY / service).is_file()]
     sudo_services = [service for service in SUDO_PAM_SERVICES if (PAM_DIRECTORY / service).is_file()]
     if login_enabled and not login_services:
-        raise ValidationError("No supported Ubuntu login PAM service was found.")
+        raise ValidationError(_("No supported Ubuntu login PAM service was found."))
     if sudo_enabled and not sudo_services:
-        raise ValidationError("The Ubuntu sudo PAM service was not found.")
+        raise ValidationError(_("The Ubuntu sudo PAM service was not found."))
 
     for service in login_services if login_enabled else ():
         with_managed_pam_block((PAM_DIRECTORY / service).read_text(encoding="utf-8"))
@@ -98,4 +99,4 @@ def configure_pam(payload: dict[str, Any]) -> None:
         write_pam_service(service, sudo_enabled)
     state["pam"] = {"login": login_enabled, "sudo": sudo_enabled}
     save_state(state)
-    emit("complete", message="Updated password + YubiKey requirements.")
+    emit("complete", message=_("Updated password + YubiKey requirements."))

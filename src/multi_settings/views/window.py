@@ -8,6 +8,7 @@ gi.require_version("Gtk", "4.0")
 from gi.repository import Adw, Gdk, Gtk
 
 from multi_settings.config import APP_NAME
+from multi_settings.i18n import _, get_language, set_language
 from multi_settings.views.hardening import HardeningPage
 from multi_settings.views.overview import OverviewPage
 from multi_settings.views.users import UsersPage
@@ -15,7 +16,7 @@ from multi_settings.views.yubikeys import YubiKeysPage
 
 
 class MainWindow(Adw.ApplicationWindow):
-    def __init__(self, application: Adw.Application) -> None:
+    def __init__(self, application: Adw.Application, visible_page: str = "overview") -> None:
         super().__init__(application=application, title=APP_NAME)
         self.set_default_size(1_120, 760)
         self.set_size_request(780, 560)
@@ -25,6 +26,13 @@ class MainWindow(Adw.ApplicationWindow):
         content = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         header = Adw.HeaderBar()
         header.set_title_widget(Gtk.Label(label=APP_NAME, css_classes=["heading"]))
+        target_language = "en" if get_language() == "sv" else "sv"
+        language_button = Gtk.Button(
+            label="English" if target_language == "en" else "Svenska",
+            tooltip_text=_("Switch to English") if target_language == "en" else _("Switch to Swedish"),
+        )
+        language_button.connect("clicked", self._switch_language, target_language)
+        header.pack_end(language_button)
         content.append(header)
 
         main = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, hexpand=True, vexpand=True)
@@ -46,10 +54,13 @@ class MainWindow(Adw.ApplicationWindow):
         self.toast_overlay.set_child(content)
         self.set_content(self.toast_overlay)
 
-        self._add_page(OverviewPage(), "overview", "Overview", "computer-symbolic")
-        self._add_page(UsersPage(self.notify), "users", "Users", "system-users-symbolic")
-        self._add_page(YubiKeysPage(self.notify), "yubikeys", "YubiKeys", "dialog-password-symbolic")
-        self._add_page(HardeningPage(self.notify, self), "hardening", "Hardening", "security-high-symbolic")
+        self._add_page(OverviewPage(), "overview", _("Overview"), "computer-symbolic")
+        self.hardening_page = HardeningPage(self.notify, self)
+        self._add_page(self.hardening_page, "hardening", _("Hardening"), "security-high-symbolic")
+        self._add_page(UsersPage(self.notify), "users", _("Users"), "system-users-symbolic")
+        self.yubikeys_page = YubiKeysPage(self.notify)
+        self._add_page(self.yubikeys_page, "yubikeys", "YubiKeys", "dialog-password-symbolic")
+        self.stack.set_visible_child_name(visible_page)
 
     def _add_page(self, page: Gtk.Widget, name: str, title: str, icon: str) -> None:
         child = self.stack.add_titled(page, name, title)
@@ -57,6 +68,20 @@ class MainWindow(Adw.ApplicationWindow):
 
     def notify(self, message: str) -> None:
         self.toast_overlay.add_toast(Adw.Toast.new(message))
+
+    def _switch_language(self, _button: Gtk.Button, language: str) -> None:
+        if self.hardening_page.running:
+            self.notify(_("Wait for the hardening operation to finish before changing language."))
+            return
+        visible_page = self.stack.get_visible_child_name() or "overview"
+        set_language(language, persist=True)
+        replacement = MainWindow(self.get_application(), visible_page)
+        replacement.present()
+        self.close()
+
+    def do_close_request(self) -> bool:
+        self.yubikeys_page.stop_polling()
+        return False
 
     @staticmethod
     def _install_styles() -> None:

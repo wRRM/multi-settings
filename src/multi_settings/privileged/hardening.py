@@ -21,6 +21,7 @@ from multi_settings.domain.validation import (
     reject_template_expressions,
     validate_yaml_value,
 )
+from multi_settings.i18n import _
 from multi_settings.privileged.protocol import SAFE_ENVIRONMENT, emit, fail
 
 
@@ -31,15 +32,26 @@ def validate_hardening_variables(variables: dict[str, Any], roles_root: Path) ->
         try:
             defaults = yaml.safe_load(defaults_path.read_text(encoding="utf-8"))
         except (OSError, yaml.YAMLError) as error:
-            raise ValidationError(f"Could not read trusted {role_name} defaults: {error}") from error
+            raise ValidationError(
+                _("Could not read trusted {role_name} defaults: {error}").format(
+                    role_name=role_name, error=error
+                )
+            ) from error
         if not isinstance(defaults, dict):
-            raise ValidationError(f"The installed {role_name} defaults are invalid.")
+            raise ValidationError(
+                _("The installed {role_name} defaults are invalid.").format(
+                    role_name=role_name
+                )
+            )
         allowed_names.update(str(name) for name in defaults)
     unknown = sorted(set(variables) - allowed_names)
     if unknown:
-        raise ValidationError(
-            "Unsupported hardening variable" + ("s: " if len(unknown) > 1 else ": ") + ", ".join(unknown)
+        template = (
+            _("Unsupported hardening variables: {variables}")
+            if len(unknown) > 1
+            else _("Unsupported hardening variable: {variables}")
         )
+        raise ValidationError(template.format(variables=", ".join(unknown)))
 
     reject_template_expressions(variables)
 
@@ -52,40 +64,48 @@ def validate_ubuntu_2604() -> None:
                 key, value = line.split("=", maxsplit=1)
                 os_release[key] = value.strip().strip('"')
     except OSError as error:
-        raise ValidationError(f"Could not identify the operating system: {error}") from error
+        raise ValidationError(
+            _("Could not identify the operating system: {error}").format(error=error)
+        ) from error
     if os_release.get("ID") != "ubuntu" or os_release.get("VERSION_ID") != "26.04":
-        raise ValidationError("Hardening is restricted to Ubuntu 26.04.")
+        raise ValidationError(_("Hardening is restricted to Ubuntu 26.04."))
 
 
 def hardening_run(payload: dict[str, Any]) -> None:
     mode = payload.get("mode")
     if mode not in ("audit", "apply"):
-        raise ValidationError("Hardening mode must be audit or apply.")
+        raise ValidationError(_("Hardening mode must be audit or apply."))
     variables = validate_yaml_value(payload.get("variables", {}))
     if not isinstance(variables, dict):
-        raise ValidationError("Hardening variables must be a mapping.")
+        raise ValidationError(_("Hardening variables must be a mapping."))
     validate_ubuntu_2604()
     if not PLAYBOOK_PATH.is_file():
-        raise ValidationError("The Multi Settings Ansible playbook is not installed.")
+        raise ValidationError(_("The Multi Settings Ansible playbook is not installed."))
     roles_root = COLLECTIONS_PATH / "ansible_collections/devsec/hardening/roles"
     expected_roles = (roles_root / "os_hardening", roles_root / "ssh_hardening")
     if not all(role.is_dir() for role in expected_roles):
-        raise ValidationError("The pinned DevSec hardening collection is not installed.")
+        raise ValidationError(_("The pinned DevSec hardening collection is not installed."))
     manifest_path = roles_root.parent / "MANIFEST.json"
     try:
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
         installed_version = manifest["collection_info"]["version"]
     except (OSError, json.JSONDecodeError, KeyError, TypeError) as error:
-        raise ValidationError(f"Could not verify the installed hardening collection: {error}") from error
+        raise ValidationError(
+            _("Could not verify the installed hardening collection: {error}").format(
+                error=error
+            )
+        ) from error
     if installed_version != HARDENING_COLLECTION_VERSION:
         raise ValidationError(
-            f"Hardening collection {installed_version} is installed; version "
-            f"{HARDENING_COLLECTION_VERSION} is required."
+            _("Hardening collection {installed_version} is installed; version {required_version} is required.").format(
+                installed_version=installed_version,
+                required_version=HARDENING_COLLECTION_VERSION,
+            )
         )
     validate_hardening_variables(variables, roles_root)
     executable = Path("/usr/bin/ansible-playbook")
     if not executable.is_file():
-        raise ValidationError("ansible-playbook is not installed.")
+        raise ValidationError(_("ansible-playbook is not installed."))
 
     descriptor, variables_path = tempfile.mkstemp(prefix="multi-settings-vars.", suffix=".json")
     try:
@@ -127,8 +147,11 @@ def hardening_run(payload: dict[str, Any]) -> None:
                     last_unstructured_line = rendered.strip()
         return_code = process.wait()
         if return_code != 0:
-            fail(last_unstructured_line or "Ansible reported a failure.")
-        emit("complete", message="Audit completed." if mode == "audit" else "Hardening completed.")
+            fail(last_unstructured_line or _("Ansible reported a failure."))
+        emit(
+            "complete",
+            message=_("Audit completed.") if mode == "audit" else _("Hardening completed."),
+        )
     finally:
         try:
             os.unlink(variables_path)

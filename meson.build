@@ -1,4 +1,4 @@
-project('multi-settings', version: '0.1.0', meson_version: '>= 1.3.0')
+project('multi-settings', version: '0.2.0', meson_version: '>= 1.3.0')
 
 if get_option('prefix') != '/usr'
   error('Multi Settings is a system application; configure Meson with --prefix=/usr')
@@ -15,6 +15,7 @@ python.install_sources(
   'src/multi_settings/application.py',
   'src/multi_settings/config.py',
   'src/multi_settings/helper.py',
+  'src/multi_settings/i18n.py',
   subdir: 'multi_settings',
 )
 
@@ -66,6 +67,4 @@ install_data('data/io.github.wrrm.multisettings.policy', install_dir: get_option
 install_data('data/ansible/site.yml', install_dir: get_option('datadir') / 'multi-settings/ansible')
 install_data('data/ansible/requirements.yml', install_dir: get_option('datadir') / 'multi-settings/ansible')
 install_data('data/ansible/callback_plugins/multi_settings_jsonl.py', install_dir: get_option('datadir') / 'multi-settings/ansible/callback_plugins')
-install_data('scripts/install-hardening-content', install_dir: get_option('datadir') / 'multi-settings/scripts', install_mode: 'rwxr-xr-x')
-
 gnome.post_install(gtk_update_icon_cache: true, update_desktop_database: true)

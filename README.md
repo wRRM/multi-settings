@@ -4,13 +4,17 @@ Multi Settings is a native GTK 4/libadwaita application for preparing and
 hardening Ubuntu 26.04 workstations. It provides:
 
 - local user creation;
-- primary and secondary YubiKey enrollment for administrator and standard
-  accounts;
+- primary and secondary YubiKey enrollment, including PIN-protected keys, for
+  administrator and standard accounts;
 - password + YubiKey enforcement for graphical/console login and `sudo`;
 - audit and application of the DevSec `os_hardening` and `ssh_hardening`
   Ansible roles;
 - import of a `custom-settings.yml` file whose values have highest precedence;
 - task-by-task hardening results with success, skipped, and failed states.
+
+The application interface defaults to Swedish. The header button switches the
+entire interface between Swedish and English and remembers that preference for
+the signed-in user.
 
 The GTK process always runs as the signed-in user. Read-only discovery is done
 without elevation. Mutations go through a small, allow-listed helper launched
@@ -40,12 +44,20 @@ require an installed helper and policy:
 ```sh
 meson setup build --prefix=/usr
 meson compile -C build
+./scripts/fetch-hardening-content
 sudo meson install -C build
 sudo scripts/install-hardening-content
 ```
 
-The collection installer pins `devsec.hardening` 10.6.0 beneath
-`/usr/share/multi-settings/collections`; it does not execute either role.
+The collection installer imports the checksum-pinned `devsec.hardening` 10.6.0
+archive beneath `/usr/share/multi-settings/collections`; it does not download or
+execute either role. To use a previously downloaded archive, import it with:
+
+```sh
+./scripts/fetch-hardening-content /path/to/devsec-hardening-10.6.0.tar.gz
+```
+
+Archives for other versions or archives whose checksum differs are rejected.
 
 Run the headless unit tests with:
 
@@ -62,8 +74,9 @@ version, such as `v0.1.0`, also publishes the `.deb` and checksum on a GitHub
 Release.
 
 The package embeds the checksum-pinned DevSec hardening collection, so an
-installed application does not download executable content at runtime. To
-build the same package locally on Ubuntu 26.04:
+installed application does not download executable content at runtime. The CI
+workflow caches that exact archive and downloads it only when the verified cache
+is unavailable. To build the same package locally on Ubuntu 26.04:
 
 ```sh
 sudo apt build-dep .

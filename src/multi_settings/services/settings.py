@@ -13,6 +13,7 @@ from multi_settings.domain.validation import (
     reject_template_expressions,
     validate_yaml_value,
 )
+from multi_settings.i18n import _
 
 
 class UniqueKeySafeLoader(yaml.SafeLoader):
@@ -54,17 +55,17 @@ class CustomSettingsService:
 
     def import_file(self, source: Path) -> dict[str, Any]:
         if not source.is_file():
-            raise ValidationError("Choose an existing YAML file.")
+            raise ValidationError(_("Choose an existing YAML file."))
         if source.stat().st_size > 1_048_576:
-            raise ValidationError("The settings file must be smaller than 1 MiB.")
+            raise ValidationError(_("The settings file must be smaller than 1 MiB."))
         try:
             loaded = yaml.load(source.read_text(encoding="utf-8"), Loader=UniqueKeySafeLoader)
         except (OSError, UnicodeError, yaml.YAMLError) as error:
-            raise ValidationError(f"Could not read YAML: {error}") from error
+            raise ValidationError(_("Could not read YAML: {error}").format(error=error)) from error
         if loaded is None:
             loaded = {}
         if not isinstance(loaded, dict):
-            raise ValidationError("The top-level YAML value must be a mapping.")
+            raise ValidationError(_("The top-level YAML value must be a mapping."))
         clean = validate_yaml_value(loaded)
         reject_template_expressions(clean)
         self._save(clean)

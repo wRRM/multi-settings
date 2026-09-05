@@ -10,9 +10,39 @@ project_root=$(dirname -- "${script_directory}")
 cd "${project_root}"
 
 mkdir -p vendor
-curl --fail --location --proto '=https' --tlsv1.2 \
-  --output "vendor/${archive}.partial" "${download_url}"
 expected_sha256=$(awk 'NF == 2 { print $1 }' "data/ansible/devsec-hardening-${version}.sha256")
-echo "${expected_sha256}  vendor/${archive}.partial" | sha256sum --check --strict
+
+verify_archive() {
+  actual_sha256=$(sha256sum -- "$1" | awk '{ print $1 }')
+  if [ "${actual_sha256}" != "${expected_sha256}" ]; then
+    echo "Checksum verification failed for $1" >&2
+    return 1
+  fi
+}
+
+if [ "$#" -gt 1 ]; then
+  echo "Usage: $0 [${archive}]" >&2
+  exit 64
+fi
+
+if [ -f "vendor/${archive}" ] && verify_archive "vendor/${archive}"; then
+  echo "Reusing verified vendor/${archive}."
+  exit 0
+fi
+
+if [ "$#" -eq 1 ]; then
+  source_archive=$1
+  if [ ! -f "${source_archive}" ]; then
+    echo "Imported collection archive not found: ${source_archive}" >&2
+    exit 66
+  fi
+  verify_archive "${source_archive}"
+  cp -- "${source_archive}" "vendor/${archive}.partial"
+else
+  curl --fail --location --proto '=https' --tlsv1.2 \
+    --output "vendor/${archive}.partial" "${download_url}"
+fi
+
+verify_archive "vendor/${archive}.partial"
 mv "vendor/${archive}.partial" "vendor/${archive}"
-echo "Fetched and verified ${archive}."
+echo "Imported and verified ${archive}."

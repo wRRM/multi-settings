@@ -4,6 +4,7 @@ import json
 from typing import Any
 
 from multi_settings.config import PRIVATE_STATE_FILE, STATE_DIR, STATE_FILE
+from multi_settings.i18n import _
 from multi_settings.privileged.protocol import atomic_write, fail
 
 
@@ -14,9 +15,9 @@ def load_state() -> dict[str, Any]:
     except FileNotFoundError:
         return {"version": 1, "enrollments": [], "pam": {"login": False, "sudo": False}}
     except (OSError, json.JSONDecodeError) as error:
-        fail(f"The Multi Settings state is unreadable: {error}")
+        fail(_("The Multi Settings state is unreadable: {error}").format(error=error))
     if not isinstance(loaded, dict) or not isinstance(loaded.get("enrollments", []), list):
-        fail("The Multi Settings state has an invalid format.")
+        fail(_("The Multi Settings state has an invalid format."))
     return loaded
 
 

@@ -9,6 +9,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from multi_settings.config import HELPER_PATH
+from multi_settings.i18n import _, get_language
 
 
 @dataclass(frozen=True, slots=True)
@@ -27,7 +28,9 @@ class PrivilegedClient:
         payload: dict[str, Any],
         event_callback: Callable[[dict[str, Any]], None] | None = None,
     ) -> PrivilegedResponse:
-        request = json.dumps({"action": action, "payload": payload})
+        request = json.dumps(
+            {"action": action, "payload": payload, "language": get_language()}
+        )
         helper = os.environ.get("MULTI_SETTINGS_HELPER", str(HELPER_PATH))
         process = subprocess.Popen(
             ["pkexec", helper],
@@ -43,7 +46,7 @@ class PrivilegedClient:
         process.stdin.close()
 
         events: list[dict[str, Any]] = []
-        final_message = "Operation completed."
+        final_message = _("Operation completed.")
         for line in process.stdout:
             try:
                 event = json.loads(line)
@@ -61,11 +64,11 @@ class PrivilegedClient:
         return_code = process.wait()
         if return_code != 0:
             if return_code == 126:
-                final_message = "Administrator authentication was cancelled."
+                final_message = _("Administrator authentication was cancelled.")
             elif stderr:
                 final_message = stderr.splitlines()[-1]
             elif not events:
-                final_message = "The privileged operation failed."
+                final_message = _("The privileged operation failed.")
         return PrivilegedResponse(return_code == 0, final_message, tuple(events))
 
     def run_async(

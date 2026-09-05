@@ -6,6 +6,7 @@ import subprocess
 import sys
 
 from multi_settings.domain.validation import ValidationError
+from multi_settings.i18n import SUPPORTED_LANGUAGES, _, set_language
 from multi_settings.privileged.hardening import hardening_run
 from multi_settings.privileged.pam import configure_pam
 from multi_settings.privileged.protocol import MAX_REQUEST_BYTES, fail
@@ -27,23 +28,31 @@ def main() -> int:
         return 77
     raw = sys.stdin.buffer.read(MAX_REQUEST_BYTES + 1)
     if len(raw) > MAX_REQUEST_BYTES:
-        fail("The request is too large.")
+        fail(_("The request is too large."))
     try:
         request = json.loads(raw.decode("utf-8"))
         action = request["action"]
         payload = request.get("payload", {})
+        language = request.get("language", "sv")
     except (UnicodeError, json.JSONDecodeError, KeyError, TypeError):
-        fail("The request is invalid.")
-    if not isinstance(action, str) or action not in ACTIONS or not isinstance(payload, dict):
-        fail("The requested operation is not allowed.")
+        fail(_("The request is invalid."))
+    if (
+        not isinstance(action, str)
+        or action not in ACTIONS
+        or not isinstance(payload, dict)
+        or not isinstance(language, str)
+        or language not in SUPPORTED_LANGUAGES
+    ):
+        fail(_("The requested operation is not allowed."))
+    set_language(language)
     try:
         ACTIONS[action](payload)
     except ValidationError as error:
         fail(str(error))
     except subprocess.CalledProcessError as error:
-        fail(f"System command failed with exit code {error.returncode}.")
+        fail(_("System command failed with exit code {code}.").format(code=error.returncode))
     except OSError as error:
-        fail(f"System operation failed: {error}")
+        fail(_("System operation failed: {error}").format(error=error))
     return 0
 
 

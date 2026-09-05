@@ -1,10 +1,12 @@
 [Desktop Entry]
 Name=Multi Settings
 Comment=Prepare and harden an Ubuntu workstation
+Comment[sv]=Förbered och härda en Ubuntu-arbetsstation
 Exec=multi-settings
 Icon=io.github.wrrm.multisettings
 Terminal=false
 Type=Application
 Categories=Settings;Security;
 Keywords=users;yubikey;security;hardening;ansible;
+Keywords[sv]=användare;yubikey;säkerhet;härdning;ansible;
 StartupNotify=true
