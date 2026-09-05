@@ -3,18 +3,24 @@
 Multi Settings is a native GTK 4/libadwaita application for preparing and
 hardening Ubuntu 26.04 workstations. It provides:
 
-- local user creation;
+- local user creation and removal of non-administrator accounts;
 - primary and secondary YubiKey enrollment, including PIN-protected keys, for
   administrator and standard accounts;
 - password + YubiKey enforcement for graphical/console login and `sudo`;
-- audit and application of the DevSec `os_hardening` and `ssh_hardening`
-  Ansible roles;
-- import of a `custom-settings.yml` file whose values have highest precedence;
-- task-by-task hardening results with success, skipped, and failed states.
+- independent or combined audit and application of the DevSec `os_hardening`
+  and `ssh_hardening` Ansible roles;
+- automatic loading of `~/.config/multi-settings/custom-settings.yaml`, whose
+  values have highest precedence;
+- task-by-task hardening results with success, skipped, and failed states,
+  exportable as a private CSV file.
 
 The application interface defaults to Swedish. The header button switches the
 entire interface between Swedish and English and remembers that preference for
 the signed-in user.
+
+During package installation, the app records the initiating user's numeric ID
+when the package manager provides it. On the first installed launch by that same
+user, it creates a desktop shortcut only in that user's home directory.
 
 The GTK process always runs as the signed-in user. Read-only discovery is done
 without elevation. Mutations go through a small, allow-listed helper launched
@@ -70,7 +76,7 @@ python3 -m unittest discover -s tests -v
 GitHub Actions builds an Ubuntu 26.04 `Architecture: all` package after every
 push to `main`. The package and its SHA-256 checksum are available on the
 workflow run's **Artifacts** page for 30 days. Pushing a tag matching the Debian
-version, such as `v0.1.0`, also publishes the `.deb` and checksum on a GitHub
+version, such as `v0.3.0`, also publishes the `.deb` and checksum on a GitHub
 Release.
 
 The package embeds the checksum-pinned DevSec hardening collection, so an

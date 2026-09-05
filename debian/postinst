@@ -1,0 +1,18 @@
+#!/bin/sh
+set -e
+
+if [ "$1" = "configure" ] && [ ! -e /var/lib/multi-settings/installer-uid ]; then
+  installer_uid=${SUDO_UID:-${PKEXEC_UID:-}}
+  case "${installer_uid}" in
+    ''|*[!0-9]*) installer_uid= ;;
+  esac
+  if [ -n "${installer_uid}" ] && [ "${installer_uid}" -ge 1000 ] && [ "${installer_uid}" -ne 65534 ]; then
+    install -d -m 0755 /var/lib/multi-settings
+    temporary_file=$(mktemp /var/lib/multi-settings/.installer-uid.XXXXXX)
+    printf '%s\n' "${installer_uid}" > "${temporary_file}"
+    chmod 0644 "${temporary_file}"
+    mv "${temporary_file}" /var/lib/multi-settings/installer-uid
+  fi
+fi
+
+#DEBHELPER#

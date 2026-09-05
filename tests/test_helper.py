@@ -4,6 +4,7 @@ import unittest
 from unittest.mock import patch
 import tempfile
 from pathlib import Path
+from types import SimpleNamespace
 
 from multi_settings.config import PAM_LINE, PAM_MARKER_END, PAM_MARKER_START, PAM_PASSWORD_LINE
 from multi_settings.domain.validation import ValidationError
@@ -11,9 +12,72 @@ from multi_settings.privileged.hardening import validate_hardening_variables
 from multi_settings.privileged.pam import with_managed_pam_block, without_managed_pam_block
 from multi_settings.privileged.yubikeys import unenroll_yubikey, validate_credential
 from multi_settings.privileged.yubikeys import enroll_yubikey
+from multi_settings.privileged.users import delete_user
 
 
 class HelperTests(unittest.TestCase):
+    def test_standard_user_removal_cleans_up_yubikey_state(self) -> None:
+        state = {
+            "enrollments": [
+                {"username": "alice", "serial": "1234", "slot": "primary"},
+                {"username": "bob", "serial": "5678", "slot": "primary"},
+            ],
+            "pam": {"login": False, "sudo": False},
+        }
+        with (
+            patch(
+                "multi_settings.privileged.users.ensure_known_user",
+                return_value=SimpleNamespace(pw_uid=1001, pw_shell="/bin/bash"),
+            ),
+            patch("multi_settings.privileged.users.administrator_names", return_value=set()),
+            patch("multi_settings.privileged.users.load_state", return_value=state),
+            patch("multi_settings.privileged.users.subprocess.run") as run,
+            patch("multi_settings.privileged.users.save_state") as save_state,
+            patch("multi_settings.privileged.users.emit"),
+            patch("multi_settings.privileged.yubikeys.rebuild_mapping_file") as rebuild,
+            patch.dict("multi_settings.privileged.users.os.environ", {}, clear=True),
+        ):
+            delete_user({"username": "alice"})
+
+        run.assert_called_once()
+        rebuild.assert_called_once_with(state)
+        save_state.assert_called_once_with(state)
+        self.assertEqual([item["username"] for item in state["enrollments"]], ["bob"])
+
+    def test_administrator_account_removal_is_refused(self) -> None:
+        with (
+            patch(
+                "multi_settings.privileged.users.ensure_known_user",
+                return_value=SimpleNamespace(pw_uid=1001, pw_shell="/bin/bash"),
+            ),
+            patch(
+                "multi_settings.privileged.users.administrator_names",
+                return_value={"alice"},
+            ),
+            patch("multi_settings.privileged.users.subprocess.run") as run,
+        ):
+            with self.assertRaises(ValidationError):
+                delete_user({"username": "alice"})
+        run.assert_not_called()
+
+    def test_current_account_removal_is_refused(self) -> None:
+        with (
+            patch(
+                "multi_settings.privileged.users.ensure_known_user",
+                return_value=SimpleNamespace(pw_uid=1001, pw_shell="/bin/bash"),
+            ),
+            patch("multi_settings.privileged.users.administrator_names", return_value=set()),
+            patch("multi_settings.privileged.users.subprocess.run") as run,
+            patch.dict(
+                "multi_settings.privileged.users.os.environ",
+                {"PKEXEC_UID": "1001"},
+                clear=True,
+            ),
+        ):
+            with self.assertRaises(ValidationError):
+                delete_user({"username": "alice"})
+        run.assert_not_called()
+
     def test_managed_pam_block_follows_password_stack(self) -> None:
         original = "#%PAM-1.0\n@include common-auth\n@include common-account\n"
         updated = with_managed_pam_block(original)

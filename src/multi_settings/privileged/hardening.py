@@ -24,6 +24,23 @@ from multi_settings.domain.validation import (
 from multi_settings.i18n import _
 from multi_settings.privileged.protocol import SAFE_ENVIRONMENT, emit, fail
 
+HARDENING_COMPONENTS = {
+    "os_hardening": "os_hardening",
+    "ssh_hardening": "ssh_hardening",
+}
+
+
+def selected_hardening_tags(payload: dict[str, Any]) -> tuple[str, ...]:
+    for name in HARDENING_COMPONENTS:
+        if not isinstance(payload.get(name), bool):
+            raise ValidationError(_("Hardening component selections are invalid."))
+    selected = tuple(
+        tag for name, tag in HARDENING_COMPONENTS.items() if payload[name]
+    )
+    if not selected:
+        raise ValidationError(_("Select OS hardening, SSH hardening, or both."))
+    return selected
+
 
 def validate_hardening_variables(variables: dict[str, Any], roles_root: Path) -> None:
     allowed_names: set[str] = set()
@@ -78,6 +95,7 @@ def hardening_run(payload: dict[str, Any]) -> None:
     variables = validate_yaml_value(payload.get("variables", {}))
     if not isinstance(variables, dict):
         raise ValidationError(_("Hardening variables must be a mapping."))
+    selected_tags = selected_hardening_tags(payload)
     validate_ubuntu_2604()
     if not PLAYBOOK_PATH.is_file():
         raise ValidationError(_("The Multi Settings Ansible playbook is not installed."))
@@ -124,7 +142,14 @@ def hardening_run(payload: dict[str, Any]) -> None:
                 "ANSIBLE_NOCOLOR": "1",
             }
         )
-        command = [str(executable), str(PLAYBOOK_PATH), "--extra-vars", f"@{variables_path}"]
+        command = [
+            str(executable),
+            str(PLAYBOOK_PATH),
+            "--tags",
+            ",".join(selected_tags),
+            "--extra-vars",
+            f"@{variables_path}",
+        ]
         if mode == "audit":
             command.extend(("--check", "--diff"))
         process = subprocess.Popen(

@@ -20,10 +20,7 @@ class OverviewPage(Gtk.Box):
         self.set_margin_bottom(32)
         self.set_margin_start(32)
         self.set_margin_end(32)
-        privilege, body = section(
-            _("Least-privilege design"),
-            _("Discovery stays in this ordinary-user process. System changes use the desktop's administrator authentication window; one authorization is normally retained for five minutes."),
-        )
+        privilege, body = section(_("Overview"))
         helper_ready = HELPER_PATH.is_file()
         policy_ready = shutil.which("pkexec") is not None
         for name, ready in (
@@ -48,7 +45,7 @@ class OverviewPage(Gtk.Box):
         workflow, workflow_body = section(_("Order of execution"))
         for number, text in enumerate(
             (
-                _("Import custom-settings.yml, run an audit, review the results, and apply hardening."),
+                _("Load custom-settings.yaml, run an audit, review the results, and apply hardening."),
                 _("Create and verify the administrator and standard accounts."),
                 _("Enroll primary and secondary YubiKeys, then enable login and sudo requirements."),
             ),

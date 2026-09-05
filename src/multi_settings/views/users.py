@@ -1,11 +1,14 @@
 from __future__ import annotations
 
+import os
+
 import gi
 
+gi.require_version("Adw", "1")
 gi.require_version("GLib", "2.0")
 gi.require_version("Gtk", "4.0")
 
-from gi.repository import GLib, Gtk
+from gi.repository import Adw, GLib, Gtk
 
 from multi_settings.domain.validation import ValidationError, validate_full_name, validate_password, validate_username
 from multi_settings.i18n import _
@@ -15,9 +18,10 @@ from multi_settings.views.common import clear_box, form_row, page_title, section
 
 
 class UsersPage(Gtk.Box):
-    def __init__(self, notify) -> None:
+    def __init__(self, notify, parent_window: Gtk.Window) -> None:
         super().__init__(orientation=Gtk.Orientation.VERTICAL, spacing=28)
         self.notify = notify
+        self.parent_window = parent_window
         self.privileged = PrivilegedClient()
         self.set_margin_top(32)
         self.set_margin_bottom(32)
@@ -73,6 +77,11 @@ class UsersPage(Gtk.Box):
             badge = Gtk.Label(label=_("Administrator") if user.is_administrator else _("Standard"))
             badge.add_css_class("accent" if user.is_administrator else "dim-label")
             row.append(badge)
+            if not user.is_administrator and user.uid != os.getuid():
+                remove = Gtk.Button(label=_("Remove"))
+                remove.add_css_class("destructive-action")
+                remove.connect("clicked", self._confirm_remove, user.username)
+                row.append(remove)
             self.user_list.append(row)
 
     def _create_user(self, _button: Gtk.Button) -> None:
@@ -106,4 +115,46 @@ class UsersPage(Gtk.Box):
             self.full_name.set_text("")
             self.administrator.set_active(False)
             self.refresh()
+        return GLib.SOURCE_REMOVE
+
+    def _confirm_remove(self, button: Gtk.Button, username: str) -> None:
+        dialog = Adw.AlertDialog(
+            heading=_("Remove {username}?").format(username=username),
+            body=_("The account and its home folder will be permanently removed. Any YubiKey enrollments for the account will also be removed."),
+        )
+        dialog.add_response("cancel", _("Cancel"))
+        dialog.add_response("remove", _("Remove account"))
+        dialog.set_response_appearance("remove", Adw.ResponseAppearance.DESTRUCTIVE)
+        dialog.set_default_response("cancel")
+        dialog.set_close_response("cancel")
+        dialog.choose(
+            self.parent_window,
+            None,
+            lambda current_dialog, result: self._remove_confirmed(
+                current_dialog, result, username, button
+            ),
+        )
+
+    def _remove_confirmed(
+        self,
+        dialog: Adw.AlertDialog,
+        result,
+        username: str,
+        button: Gtk.Button,
+    ) -> None:
+        if dialog.choose_finish(result) != "remove":
+            return
+        button.set_sensitive(False)
+        self.privileged.run_async(
+            "user.delete",
+            {"username": username},
+            lambda response: GLib.idle_add(self._removed, response, button),
+        )
+
+    def _removed(self, response: PrivilegedResponse, button: Gtk.Button) -> bool:
+        self.notify(response.message)
+        if response.ok:
+            self.refresh()
+        else:
+            button.set_sensitive(True)
         return GLib.SOURCE_REMOVE

@@ -7,14 +7,15 @@ gi.require_version("Gtk", "4.0")
 from gi.repository import Gtk
 
 
-def page_title(title: str, subtitle: str) -> Gtk.Box:
+def page_title(title: str, subtitle: str = "") -> Gtk.Box:
     box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
     title_label = Gtk.Label(label=title, xalign=0)
     title_label.add_css_class("title-1")
-    subtitle_label = Gtk.Label(label=subtitle, xalign=0, wrap=True)
-    subtitle_label.add_css_class("dim-label")
     box.append(title_label)
-    box.append(subtitle_label)
+    if subtitle:
+        subtitle_label = Gtk.Label(label=subtitle, xalign=0, wrap=True)
+        subtitle_label.add_css_class("dim-label")
+        box.append(subtitle_label)
     return box
 
 

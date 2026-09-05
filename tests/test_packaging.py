@@ -30,6 +30,14 @@ class PackagingTests(unittest.TestCase):
         )
         self.assertRegex(checksum, r"^[0-9a-f]{64}  devsec-hardening-10\.6\.0\.tar\.gz\n$")
 
+    def test_postinstall_records_only_an_identified_installer(self) -> None:
+        postinstall = ROOT / "debian/postinst"
+        content = postinstall.read_text(encoding="utf-8")
+        self.assertNotEqual(postinstall.stat().st_mode & 0o111, 0)
+        self.assertIn("SUDO_UID", content)
+        self.assertIn("PKEXEC_UID", content)
+        self.assertIn("installer-uid", content)
+
 
 if __name__ == "__main__":
     unittest.main()

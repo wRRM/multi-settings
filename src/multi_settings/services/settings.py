@@ -51,7 +51,15 @@ UniqueKeySafeLoader.add_constructor(
 
 class CustomSettingsService:
     def __init__(self, destination: Path | None = None) -> None:
-        self.destination = destination or user_config_dir() / "custom-settings.yml"
+        if destination is None:
+            config_directory = user_config_dir()
+            self.destination = config_directory / "custom-settings.yaml"
+            self.legacy_destination: Path | None = config_directory / "custom-settings.yml"
+            self.manages_config_directory = True
+        else:
+            self.destination = destination
+            self.legacy_destination = None
+            self.manages_config_directory = False
 
     def import_file(self, source: Path) -> dict[str, Any]:
         if not source.is_file():
@@ -72,9 +80,22 @@ class CustomSettingsService:
         return clean
 
     def load(self) -> dict[str, Any]:
-        if not self.destination.exists():
+        if self.manages_config_directory:
+            try:
+                self.destination.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+                self.destination.parent.chmod(0o700)
+            except OSError as error:
+                raise ValidationError(
+                    _("Could not create the configuration directory: {error}").format(
+                        error=error
+                    )
+                ) from error
+        source = self.destination
+        if not source.exists() and self.legacy_destination is not None:
+            source = self.legacy_destination
+        if not source.exists():
             return {}
-        return self.import_file(self.destination)
+        return self.import_file(source)
 
     def _save(self, settings: dict[str, Any]) -> None:
         self.destination.parent.mkdir(mode=0o700, parents=True, exist_ok=True)

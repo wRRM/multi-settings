@@ -57,7 +57,7 @@ class MainWindow(Adw.ApplicationWindow):
         self._add_page(OverviewPage(), "overview", _("Overview"), "computer-symbolic")
         self.hardening_page = HardeningPage(self.notify, self)
         self._add_page(self.hardening_page, "hardening", _("Hardening"), "security-high-symbolic")
-        self._add_page(UsersPage(self.notify), "users", _("Users"), "system-users-symbolic")
+        self._add_page(UsersPage(self.notify, self), "users", _("Users"), "system-users-symbolic")
         self.yubikeys_page = YubiKeysPage(self.notify)
         self._add_page(self.yubikeys_page, "yubikeys", "YubiKeys", "dialog-password-symbolic")
         self.stack.set_visible_child_name(visible_page)

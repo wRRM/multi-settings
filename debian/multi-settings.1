@@ -1,4 +1,4 @@
-.TH MULTI-SETTINGS 1 "September 2026" "Multi Settings 0.1.0" "User Commands"
+.TH MULTI-SETTINGS 1 "September 2026" "Multi Settings 0.3.0" "User Commands"
 .SH NAME
 multi-settings \- manage Ubuntu accounts, YubiKeys, and system hardening
 .SH SYNOPSIS
@@ -6,15 +6,16 @@ multi-settings \- manage Ubuntu accounts, YubiKeys, and system hardening
 .SH DESCRIPTION
 .B multi-settings
 starts the native GTK 4 Multi Settings application.
-It can create local users, enroll YubiKeys, configure password plus YubiKey
-authentication, and audit or apply DevSec OS and SSH hardening.
+It can create and remove local standard users, enroll YubiKeys, configure
+password plus YubiKey authentication, and independently audit or apply DevSec
+OS and SSH hardening. Results can be saved as CSV.
 .PP
 The graphical application runs as the current user. Operations that modify
 the system are delegated to a PolicyKit-authorized helper.
 .SH FILES
 .TP
-.I ~/.config/multi-settings/custom-settings.yml
-User-selected Ansible settings that override the hardening role defaults.
+.I ~/.config/multi-settings/custom-settings.yaml
+Automatically loaded Ansible settings that override the hardening role defaults.
 .TP
 .I /var/lib/multi-settings
 Protected application state.

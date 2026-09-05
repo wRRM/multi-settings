@@ -10,13 +10,15 @@
   <metadata_license>CC0-1.0</metadata_license>
   <project_license>GPL-3.0-or-later</project_license>
   <description>
-    <p>Create local users, enroll YubiKeys, enforce two-factor PAM authentication,
-    and audit or apply DevSec OS and SSH hardening from a native GTK application.</p>
+    <p>Create users and remove standard users, enroll YubiKeys, enforce two-factor PAM
+    authentication, select OS or SSH hardening, and export the results from a
+    native GTK application.</p>
   </description>
   <launchable type="desktop-id">io.github.wrrm.multisettings.desktop</launchable>
   <url type="homepage">https://github.com/wRRM/multi-settings</url>
   <content_rating type="oars-1.1"/>
   <releases>
+    <release version="0.3.0" date="2026-09-05"/>
     <release version="0.2.0" date="2026-09-05"/>
     <release version="0.1.0" date="2026-09-04"/>
   </releases>

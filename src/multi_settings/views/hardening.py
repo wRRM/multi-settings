@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from datetime import datetime
 from typing import Any
 
 import gi
@@ -16,9 +17,10 @@ from multi_settings.domain.models import HardeningResult, TaskStatus
 from multi_settings.domain.validation import ValidationError
 from multi_settings.i18n import _
 from multi_settings.services.hardening import HardeningService, parse_task_event
+from multi_settings.services.hardening_results import HardeningResultsExporter
 from multi_settings.services.privileged import PrivilegedResponse
 from multi_settings.services.settings import CustomSettingsService
-from multi_settings.views.common import clear_box, page_title, section
+from multi_settings.views.common import clear_box, form_row, page_title, section
 
 
 class ResultRow(Gtk.ListBoxRow):
@@ -64,22 +66,21 @@ class HardeningPage(Gtk.Box):
         self.parent_window = parent_window
         self.settings_service = CustomSettingsService()
         self.hardening_service = HardeningService()
+        self.results_exporter = HardeningResultsExporter()
         self.variables: dict[str, Any] = {}
         self.results: list[HardeningResult] = []
         self.sort_key = "task"
         self.sort_reverse = False
         self.running = False
+        self.last_run_audit = True
+        self.last_os_hardening = True
+        self.last_ssh_hardening = True
         self.pulse_source: int | None = None
         self.set_margin_top(32)
         self.set_margin_bottom(32)
         self.set_margin_start(32)
         self.set_margin_end(32)
-        self.append(
-            page_title(
-                _("OS and SSH hardening"),
-                _("Audit or apply devsec.hardening for Ubuntu 26.04. Imported values override role defaults in both runs."),
-            )
-        )
+        self.append(page_title(_("Hardening")))
 
         collection, collection_body = section(_("Pinned collection"))
         collection_label = Gtk.Label(
@@ -98,7 +99,7 @@ class HardeningPage(Gtk.Box):
 
         settings, settings_body = section(
             _("Custom settings"),
-            _("Import a YAML mapping of DevSec role variables. The file is validated and copied into your private configuration directory without sudo."),
+            _("Settings are automatically loaded from ~/.config/multi-settings/custom-settings.yaml before every audit or apply operation."),
         )
         settings_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
         settings_row.set_margin_top(12)
@@ -107,11 +108,21 @@ class HardeningPage(Gtk.Box):
         settings_row.set_margin_end(12)
         self.settings_label = Gtk.Label(label=_("No custom settings imported"), xalign=0, hexpand=True)
         settings_row.append(self.settings_label)
-        choose = Gtk.Button(label=_("Import custom-settings.yml"))
+        choose = Gtk.Button(label=_("Import custom-settings.yaml"))
         choose.connect("clicked", self._choose_settings)
         settings_row.append(choose)
         settings_body.append(settings_row)
         self.append(settings)
+
+        components, components_body = section(
+            _("Hardening components"),
+            _("Select OS hardening, SSH hardening, or both."),
+        )
+        self.os_hardening_switch = Gtk.Switch(active=True, valign=Gtk.Align.CENTER)
+        self.ssh_hardening_switch = Gtk.Switch(active=True, valign=Gtk.Align.CENTER)
+        components_body.append(form_row(_("OS hardening"), self.os_hardening_switch))
+        components_body.append(form_row(_("SSH hardening"), self.ssh_hardening_switch))
+        self.append(components)
 
         run, run_body = section(
             _("Current audit status"),
@@ -128,10 +139,15 @@ class HardeningPage(Gtk.Box):
         self.apply_button.connect("clicked", self._confirm_apply)
         controls.append(self.audit_button)
         controls.append(self.apply_button)
+        self.download_button = Gtk.Button(label=_("Download results"), sensitive=False)
+        self.download_button.connect("clicked", self._download_results)
+        controls.append(self.download_button)
         self.summary = Gtk.Label(label=_("Not audited"), xalign=1, hexpand=True)
         self.summary.add_css_class("dim-label")
-        controls.append(self.summary)
         run_body.append(controls)
+        self.summary.set_margin_start(12)
+        self.summary.set_margin_end(12)
+        run_body.append(self.summary)
         self.progress = Gtk.ProgressBar(show_text=True, text=_("Ready"))
         self.progress.set_margin_top(12)
         self.progress.set_margin_bottom(12)
@@ -184,7 +200,7 @@ class HardeningPage(Gtk.Box):
 
     def _choose_settings(self, _button: Gtk.Button) -> None:
         chooser = Gtk.FileChooserNative.new(
-            _("Import custom-settings.yml"),
+            _("Import custom-settings.yaml"),
             self.parent_window,
             Gtk.FileChooserAction.OPEN,
             _("Import"),
@@ -217,11 +233,28 @@ class HardeningPage(Gtk.Box):
     def _run(self, *, audit: bool) -> None:
         if self.running:
             return
+        os_hardening = self.os_hardening_switch.get_active()
+        ssh_hardening = self.ssh_hardening_switch.get_active()
+        if not os_hardening and not ssh_hardening:
+            self.notify(_("Select OS hardening, SSH hardening, or both."))
+            return
+        try:
+            self.variables = self.settings_service.load()
+        except ValidationError as error:
+            self.notify(str(error))
+            return
+        self._update_settings_label()
         self.running = True
+        self.last_run_audit = audit
+        self.last_os_hardening = os_hardening
+        self.last_ssh_hardening = ssh_hardening
         self.results.clear()
         clear_box(self.result_list)
         self.audit_button.set_sensitive(False)
         self.apply_button.set_sensitive(False)
+        self.download_button.set_sensitive(False)
+        self.os_hardening_switch.set_sensitive(False)
+        self.ssh_hardening_switch.set_sensitive(False)
         self.progress.set_fraction(0)
         self.progress.set_text(_("Auditing…") if audit else _("Applying hardening…"))
         self.summary.set_label(_("Running"))
@@ -229,14 +262,19 @@ class HardeningPage(Gtk.Box):
         self.hardening_service.run_async(
             audit=audit,
             variables=self.variables,
+            os_hardening=os_hardening,
+            ssh_hardening=ssh_hardening,
             event_callback=lambda event: GLib.idle_add(self._handle_event, event),
             callback=lambda response: GLib.idle_add(self._finished, response, audit),
         )
 
     def _confirm_apply(self, _button: Gtk.Button) -> None:
+        if not self._selected_component_names():
+            self.notify(_("Select OS hardening, SSH hardening, or both."))
+            return
         dialog = Adw.AlertDialog(
-            heading=_("Apply OS and SSH hardening?"),
-            body=_("This changes the local machine. DevSec SSH defaults can disable password login, root login, and forwarding. Review the audit and ensure you retain a working access path."),
+            heading=_("Apply hardening?"),
+            body=self._apply_warning(),
         )
         dialog.add_response("cancel", _("Cancel"))
         dialog.add_response("apply", _("Apply hardening"))
@@ -273,6 +311,9 @@ class HardeningPage(Gtk.Box):
             self.pulse_source = None
         self.audit_button.set_sensitive(True)
         self.apply_button.set_sensitive(True)
+        self.download_button.set_sensitive(bool(self.results))
+        self.os_hardening_switch.set_sensitive(True)
+        self.ssh_hardening_switch.set_sensitive(True)
         self.progress.set_fraction(1 if response.ok else 0)
         self.progress.set_text(_("Complete") if response.ok else _("Failed"))
         counts = {status: 0 for status in TaskStatus}
@@ -290,6 +331,64 @@ class HardeningPage(Gtk.Box):
         self.summary.set_label(summary)
         self.notify(response.message)
         return GLib.SOURCE_REMOVE
+
+    def _apply_warning(self) -> str:
+        components = self._selected_component_names()
+        warning = _("This changes the local machine. Selected components: {components}.").format(
+            components=", ".join(components)
+        )
+        if self.ssh_hardening_switch.get_active():
+            warning += " " + _("SSH hardening can change remote access. Review the audit and ensure you retain a working access path.")
+        return warning
+
+    def _selected_component_names(self) -> list[str]:
+        selected: list[str] = []
+        if self.os_hardening_switch.get_active():
+            selected.append(_("OS hardening"))
+        if self.ssh_hardening_switch.get_active():
+            selected.append(_("SSH hardening"))
+        return selected
+
+    def _download_results(self, _button: Gtk.Button) -> None:
+        chooser = Gtk.FileChooserNative.new(
+            _("Download hardening results"),
+            self.parent_window,
+            Gtk.FileChooserAction.SAVE,
+            _("Save"),
+            _("Cancel"),
+        )
+        chooser.set_current_name(
+            f"multi-settings-hardening-{datetime.now().strftime('%Y%m%d-%H%M%S')}.csv"
+        )
+        csv_filter = Gtk.FileFilter()
+        csv_filter.set_name(_("CSV results"))
+        csv_filter.add_pattern("*.csv")
+        chooser.add_filter(csv_filter)
+        chooser.connect("response", self._results_destination_chosen)
+        chooser.show()
+
+    def _results_destination_chosen(
+        self, chooser: Gtk.FileChooserNative, response: int
+    ) -> None:
+        if response != Gtk.ResponseType.ACCEPT:
+            return
+        selected = chooser.get_file()
+        path = selected.get_path() if selected is not None else None
+        if path is None:
+            self.notify(_("Choose a local destination."))
+            return
+        try:
+            saved_path = self.results_exporter.save(
+                Path(path),
+                self.results,
+                audit=self.last_run_audit,
+                os_hardening=self.last_os_hardening,
+                ssh_hardening=self.last_ssh_hardening,
+            )
+        except (OSError, ValueError) as error:
+            self.notify(_("Could not save hardening results: {error}").format(error=error))
+            return
+        self.notify(_("Saved hardening results to {path}.").format(path=saved_path))
 
     def _change_sort(self, _button: Gtk.Button, key: str) -> None:
         if self.sort_key == key:

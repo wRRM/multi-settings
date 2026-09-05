@@ -1,3 +1,13 @@
+multi-settings (0.3.0) resolute; urgency=medium
+
+  * Add selectable OS and SSH hardening scopes and CSV result export.
+  * Automatically load custom-settings.yaml from the user configuration.
+  * Add safe removal of standard user accounts.
+  * Create a private desktop shortcut on the first installed launch.
+  * Simplify the Overview and Hardening headings.
+
+ -- Per Falk <45391836+wRRM@users.noreply.github.com>  Sat, 05 Sep 2026 23:31:33 +0200
+
 multi-settings (0.2.0) resolute; urgency=medium
 
   * Add Swedish as the default interface language with an English toggle.

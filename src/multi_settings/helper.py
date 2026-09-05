@@ -10,11 +10,12 @@ from multi_settings.i18n import SUPPORTED_LANGUAGES, _, set_language
 from multi_settings.privileged.hardening import hardening_run
 from multi_settings.privileged.pam import configure_pam
 from multi_settings.privileged.protocol import MAX_REQUEST_BYTES, fail
-from multi_settings.privileged.users import create_user
+from multi_settings.privileged.users import create_user, delete_user
 from multi_settings.privileged.yubikeys import enroll_yubikey, unenroll_yubikey
 
 ACTIONS = {
     "user.create": create_user,
+    "user.delete": delete_user,
     "yubikey.enroll": enroll_yubikey,
     "yubikey.unenroll": unenroll_yubikey,
     "pam.configure": configure_pam,

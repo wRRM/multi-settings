@@ -1,4 +1,4 @@
-project('multi-settings', version: '0.2.0', meson_version: '>= 1.3.0')
+project('multi-settings', version: '0.3.0', meson_version: '>= 1.3.0')
 
 if get_option('prefix') != '/usr'
   error('Multi Settings is a system application; configure Meson with --prefix=/usr')
@@ -39,7 +39,9 @@ python.install_sources(
 
 python.install_sources(
   'src/multi_settings/services/__init__.py',
+  'src/multi_settings/services/desktop_shortcut.py',
   'src/multi_settings/services/hardening.py',
+  'src/multi_settings/services/hardening_results.py',
   'src/multi_settings/services/privileged.py',
   'src/multi_settings/services/settings.py',
   'src/multi_settings/services/system_users.py',

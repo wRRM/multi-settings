@@ -32,6 +32,8 @@ class HardeningService:
         *,
         audit: bool,
         variables: dict[str, Any],
+        os_hardening: bool,
+        ssh_hardening: bool,
         event_callback: Callable[[dict[str, Any]], None],
         callback: Callable[[PrivilegedResponse], None],
     ) -> None:
@@ -39,7 +41,12 @@ class HardeningService:
         serializable_variables = json.loads(json.dumps(variables))
         self.privileged.run_async(
             "hardening.run",
-            {"mode": "audit" if audit else "apply", "variables": serializable_variables},
+            {
+                "mode": "audit" if audit else "apply",
+                "variables": serializable_variables,
+                "os_hardening": os_hardening,
+                "ssh_hardening": ssh_hardening,
+            },
             callback,
             event_callback,
         )
