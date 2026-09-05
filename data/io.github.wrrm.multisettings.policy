@@ -2,7 +2,7 @@
 <!DOCTYPE policyconfig PUBLIC "-//freedesktop//DTD PolicyKit Policy Configuration 1.0//EN"
   "http://www.freedesktop.org/standards/PolicyKit/1/policyconfig.dtd">
 <policyconfig>
-  <vendor>Multi Settings</vendor>
+  <vendor>Onboarding</vendor>
   <action id="io.github.wrrm.multisettings.manage">
     <description>Manage users, YubiKeys, PAM, or system hardening</description>
     <description xml:lang="sv">Hantera användare, YubiKeys, PAM eller systemhärdning</description>

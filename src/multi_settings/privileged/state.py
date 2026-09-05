@@ -15,9 +15,9 @@ def load_state() -> dict[str, Any]:
     except FileNotFoundError:
         return {"version": 1, "enrollments": [], "pam": {"login": False, "sudo": False}}
     except (OSError, json.JSONDecodeError) as error:
-        fail(_("The Multi Settings state is unreadable: {error}").format(error=error))
+        fail(_("The Onboarding state is unreadable: {error}").format(error=error))
     if not isinstance(loaded, dict) or not isinstance(loaded.get("enrollments", []), list):
-        fail(_("The Multi Settings state has an invalid format."))
+        fail(_("The Onboarding state has an invalid format."))
     return loaded
 
 

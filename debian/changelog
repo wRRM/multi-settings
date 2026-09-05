@@ -1,3 +1,10 @@
+multi-settings (0.3.1) resolute; urgency=medium
+
+  * Rename the installed application's visible name to Onboarding.
+  * Migrate the generated per-user desktop shortcut to Onboarding.
+
+ -- Per Falk <45391836+wRRM@users.noreply.github.com>  Sat, 05 Sep 2026 23:52:05 +0200
+
 multi-settings (0.3.0) resolute; urgency=medium
 
   * Add selectable OS and SSH hardening scopes and CSV result export.

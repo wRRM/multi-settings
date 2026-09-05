@@ -98,7 +98,7 @@ def hardening_run(payload: dict[str, Any]) -> None:
     selected_tags = selected_hardening_tags(payload)
     validate_ubuntu_2604()
     if not PLAYBOOK_PATH.is_file():
-        raise ValidationError(_("The Multi Settings Ansible playbook is not installed."))
+        raise ValidationError(_("The Onboarding Ansible playbook is not installed."))
     roles_root = COLLECTIONS_PATH / "ansible_collections/devsec/hardening/roles"
     expected_roles = (roles_root / "os_hardening", roles_root / "ssh_hardening")
     if not all(role.is_dir() for role in expected_roles):

@@ -97,7 +97,7 @@ def delete_user(payload: dict[str, Any]) -> None:
     requester_uid = os.environ.get("PKEXEC_UID")
     if requester_uid is not None and requester_uid.isdigit():
         if record.pw_uid == int(requester_uid):
-            raise ValidationError(_("You cannot remove the account currently running Multi Settings."))
+            raise ValidationError(_("You cannot remove the account currently running Onboarding."))
 
     state = load_state()
     subprocess.run(

@@ -1,6 +1,6 @@
-# Multi Settings
+# Onboarding
 
-Multi Settings is a native GTK 4/libadwaita application for preparing and
+Onboarding is a native GTK 4/libadwaita application for preparing and
 hardening Ubuntu 26.04 workstations. It provides:
 
 - local user creation and removal of non-administrator accounts;
@@ -92,7 +92,7 @@ dpkg-buildpackage --build=binary --unsigned-changes
 
 ## Safety and recovery
 
-Multi Settings never edits `/etc/pam.d/common-auth`. It adds a clearly marked
+Onboarding never edits `/etc/pam.d/common-auth`. It adds a clearly marked
 second-factor line to the individual `gdm-password`, `login`, `sudo`, and
 `sudo-i` service stacks. A required `pam_unix` check reuses the primary password
 token and is followed by required `pam_u2f`, so alternate primary methods cannot

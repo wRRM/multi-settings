@@ -4,7 +4,7 @@ import os
 from pathlib import Path
 
 APP_ID = "io.github.wrrm.multisettings"
-APP_NAME = "Multi Settings"
+APP_NAME = "Onboarding"
 POLKIT_ACTION = f"{APP_ID}.manage"
 HELPER_PATH = Path(os.environ.get("MULTI_SETTINGS_HELPER", "/usr/libexec/multi-settings-helper"))
 

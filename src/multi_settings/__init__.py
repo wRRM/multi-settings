@@ -1,3 +1,3 @@
-"""Multi Settings application package."""
+"""Onboarding application package."""
 
 __version__ = "0.1.0"

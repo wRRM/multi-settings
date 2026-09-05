@@ -27,6 +27,7 @@ class DesktopShortcutTests(unittest.TestCase):
             shortcut = service.ensure()
 
             self.assertIsNotNone(shortcut)
+            self.assertEqual(shortcut.name, "Onboarding.desktop")
             self.assertEqual(shortcut.read_text(encoding="utf-8"), source.read_text(encoding="utf-8"))
             self.assertEqual(shortcut.stat().st_mode & 0o777, 0o755)
             self.assertEqual(marker.stat().st_mode & 0o777, 0o600)
@@ -39,7 +40,7 @@ class DesktopShortcutTests(unittest.TestCase):
             source.write_text("trusted source", encoding="utf-8")
             desktop = root / "Desktop"
             desktop.mkdir()
-            existing = desktop / "Multi Settings.desktop"
+            existing = desktop / "Onboarding.desktop"
             existing.write_text("user content", encoding="utf-8")
             installer_uid = root / "installer-uid"
             installer_uid.write_text(f"{os.getuid()}\n", encoding="ascii")
@@ -52,6 +53,35 @@ class DesktopShortcutTests(unittest.TestCase):
 
             self.assertIsNone(service.ensure())
             self.assertEqual(existing.read_text(encoding="utf-8"), "user content")
+
+    def test_previous_generated_shortcut_is_renamed(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source = root / "application.desktop"
+            source.write_text(
+                "[Desktop Entry]\nName=Onboarding\nExec=multi-settings\n",
+                encoding="utf-8",
+            )
+            desktop = root / "Desktop"
+            desktop.mkdir()
+            legacy = desktop / "Multi Settings.desktop"
+            legacy.write_text(
+                "[Desktop Entry]\nName=Multi Settings\nExec=multi-settings\n",
+                encoding="utf-8",
+            )
+            installer_uid = root / "installer-uid"
+            installer_uid.write_text(f"{os.getuid()}\n", encoding="ascii")
+            service = DesktopShortcutService(
+                desktop,
+                source=source,
+                marker=root / "config" / "onboarding-desktop-icon-created",
+                installer_uid_file=installer_uid,
+            )
+
+            shortcut = service.ensure()
+
+            self.assertEqual(shortcut, desktop / "Onboarding.desktop")
+            self.assertFalse(legacy.exists())
 
     def test_non_installer_does_not_receive_a_shortcut(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

@@ -31,8 +31,8 @@ Depends:
  python3-gi,
  python3-yaml,
  yubikey-manager
-Description: Ubuntu account, YubiKey, and hardening manager
- Multi Settings is a native GTK 4 application for creating accounts and removing
+Description: Onboarding manager for Ubuntu accounts, YubiKeys, and hardening
+ Onboarding is a native GTK 4 application for creating accounts and removing
  standard local accounts,
  enrolling primary and secondary YubiKeys, enforcing password plus YubiKey
  authentication, and independently auditing or applying DevSec OS and SSH
