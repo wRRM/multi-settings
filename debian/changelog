@@ -1,19 +1,24 @@
+multi-settings (0.3.2) resolute; urgency=medium
+
+  * Remove GitHub account identifiers from application metadata.
+  * Remove per-user desktop shortcut creation.
+
+ -- Onboarding Contributors <onboarding@example.org>  Tue, 08 Sep 2026 12:00:00 +0200
+
 multi-settings (0.3.1) resolute; urgency=medium
 
   * Rename the installed application's visible name to Onboarding.
-  * Migrate the generated per-user desktop shortcut to Onboarding.
 
- -- Per Falk <45391836+wRRM@users.noreply.github.com>  Sat, 05 Sep 2026 23:52:05 +0200
+ -- Onboarding Contributors <onboarding@example.org>  Sat, 05 Sep 2026 23:52:05 +0200
 
 multi-settings (0.3.0) resolute; urgency=medium
 
   * Add selectable OS and SSH hardening scopes and CSV result export.
   * Automatically load custom-settings.yaml from the user configuration.
   * Add safe removal of standard user accounts.
-  * Create a private desktop shortcut on the first installed launch.
   * Simplify the Overview and Hardening headings.
 
- -- Per Falk <45391836+wRRM@users.noreply.github.com>  Sat, 05 Sep 2026 23:31:33 +0200
+ -- Onboarding Contributors <onboarding@example.org>  Sat, 05 Sep 2026 23:31:33 +0200
 
 multi-settings (0.2.0) resolute; urgency=medium
 
@@ -22,10 +27,10 @@ multi-settings (0.2.0) resolute; urgency=medium
   * Support PIN-protected YubiKeys during enrollment.
   * Cache or import the checksum-pinned DevSec Hardening collection.
 
- -- Per Falk <45391836+wRRM@users.noreply.github.com>  Sat, 05 Sep 2026 23:06:02 +0200
+ -- Onboarding Contributors <onboarding@example.org>  Sat, 05 Sep 2026 23:06:02 +0200
 
 multi-settings (0.1.0) resolute; urgency=medium
 
   * Initial Ubuntu 26.04 package.
 
- -- Per Falk <45391836+wRRM@users.noreply.github.com>  Fri, 04 Sep 2026 23:30:00 +0200
+ -- Onboarding Contributors <onboarding@example.org>  Fri, 04 Sep 2026 23:30:00 +0200

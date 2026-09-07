@@ -30,13 +30,34 @@ class PackagingTests(unittest.TestCase):
         )
         self.assertRegex(checksum, r"^[0-9a-f]{64}  devsec-hardening-10\.6\.0\.tar\.gz\n$")
 
-    def test_postinstall_records_only_an_identified_installer(self) -> None:
-        postinstall = ROOT / "debian/postinst"
-        content = postinstall.read_text(encoding="utf-8")
-        self.assertNotEqual(postinstall.stat().st_mode & 0o111, 0)
-        self.assertIn("SUDO_UID", content)
-        self.assertIn("PKEXEC_UID", content)
-        self.assertIn("installer-uid", content)
+    def test_package_does_not_create_per_user_desktop_shortcuts(self) -> None:
+        self.assertFalse((ROOT / "debian/postinst").exists())
+        self.assertFalse(
+            (ROOT / "src/multi_settings/services/desktop_shortcut.py").exists()
+        )
+        application = (ROOT / "src/multi_settings/application.py").read_text(
+            encoding="utf-8"
+        )
+        self.assertNotIn("desktop_shortcut", application)
+        self.assertNotIn("DIRECTORY_DESKTOP", application)
+
+    def test_application_metadata_uses_neutral_identifiers(self) -> None:
+        app_id = "org.onboarding.settings"
+        config = (ROOT / "src/multi_settings/config.py").read_text(encoding="utf-8")
+        desktop = (ROOT / f"data/{app_id}.desktop").read_text(encoding="utf-8")
+        metainfo = (ROOT / f"data/{app_id}.metainfo.xml").read_text(encoding="utf-8")
+        policy = (ROOT / f"data/{app_id}.policy").read_text(encoding="utf-8")
+        meson = (ROOT / "meson.build").read_text(encoding="utf-8")
+
+        self.assertIn(f'APP_ID = "{app_id}"', config)
+        self.assertIn(f"Icon={app_id}", desktop)
+        self.assertIn(f"<id>{app_id}</id>", metainfo)
+        self.assertIn(f'<action id="{app_id}.manage">', policy)
+        self.assertIn(f"data/{app_id}.desktop", meson)
+
+        for content in (config, desktop, metainfo, policy, meson):
+            self.assertNotIn("io.github", content.casefold())
+            self.assertNotIn("github.com", content.casefold())
 
 
 if __name__ == "__main__":

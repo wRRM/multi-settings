@@ -4,7 +4,7 @@ build-backend = "mesonpy"
 
 [project]
 name = "multi-settings"
-version = "0.3.1"
+version = "0.3.2"
 description = "Ubuntu user, YubiKey, and hardening administration"
 requires-python = ">=3.12"
 dependencies = ["PyGObject>=3.48", "PyYAML>=6.0"]

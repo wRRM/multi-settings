@@ -3,7 +3,7 @@
   "http://www.freedesktop.org/standards/PolicyKit/1/policyconfig.dtd">
 <policyconfig>
   <vendor>Onboarding</vendor>
-  <action id="io.github.wrrm.multisettings.manage">
+  <action id="org.onboarding.settings.manage">
     <description>Manage users, YubiKeys, PAM, or system hardening</description>
     <description xml:lang="sv">Hantera användare, YubiKeys, PAM eller systemhärdning</description>
     <message>Administrator authentication is required to change system security settings.</message>

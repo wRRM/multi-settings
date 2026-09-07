@@ -18,10 +18,6 @@ The application interface defaults to Swedish. The header button switches the
 entire interface between Swedish and English and remembers that preference for
 the signed-in user.
 
-During package installation, the app records the initiating user's numeric ID
-when the package manager provides it. On the first installed launch by that same
-user, it creates a desktop shortcut only in that user's home directory.
-
 The GTK process always runs as the signed-in user. Read-only discovery is done
 without elevation. Mutations go through a small, allow-listed helper launched
 by PolicyKit. The policy uses `auth_admin_keep`, which lets the desktop's

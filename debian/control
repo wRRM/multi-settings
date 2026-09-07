@@ -1,7 +1,7 @@
 Source: multi-settings
 Section: admin
 Priority: optional
-Maintainer: Per Falk <45391836+wRRM@users.noreply.github.com>
+Maintainer: Onboarding Contributors <onboarding@example.org>
 Build-Depends:
  debhelper-compat (= 13),
  dh-python,

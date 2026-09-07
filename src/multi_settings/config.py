@@ -3,7 +3,7 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-APP_ID = "io.github.wrrm.multisettings"
+APP_ID = "org.onboarding.settings"
 APP_NAME = "Onboarding"
 POLKIT_ACTION = f"{APP_ID}.manage"
 HELPER_PATH = Path(os.environ.get("MULTI_SETTINGS_HELPER", "/usr/libexec/multi-settings-helper"))
@@ -11,12 +11,10 @@ HELPER_PATH = Path(os.environ.get("MULTI_SETTINGS_HELPER", "/usr/libexec/multi-s
 STATE_DIR = Path("/var/lib/multi-settings")
 STATE_FILE = STATE_DIR / "state.json"
 PRIVATE_STATE_FILE = STATE_DIR / "private-state.json"
-INSTALLER_UID_FILE = STATE_DIR / "installer-uid"
 MAPPING_FILE = Path("/etc/u2f_mappings")
 PAM_BACKUP_DIR = STATE_DIR / "pam-backups"
 
 DATA_DIR = Path(os.environ.get("MULTI_SETTINGS_DATA_DIR", "/usr/share/multi-settings"))
-DESKTOP_FILE = Path("/usr/share/applications/io.github.wrrm.multisettings.desktop")
 PLAYBOOK_PATH = DATA_DIR / "ansible/site.yml"
 CALLBACK_DIR = DATA_DIR / "ansible/callback_plugins"
 COLLECTIONS_PATH = DATA_DIR / "collections"

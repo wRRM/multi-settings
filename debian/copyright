@@ -1,6 +1,5 @@
 Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
 Upstream-Name: multi-settings
-Source: https://github.com/wRRM/multi-settings
 
 Files: *
 Copyright: 2026 Per Falk

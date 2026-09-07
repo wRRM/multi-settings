@@ -1,4 +1,4 @@
-project('multi-settings', version: '0.3.1', meson_version: '>= 1.3.0')
+project('multi-settings', version: '0.3.2', meson_version: '>= 1.3.0')
 
 if get_option('prefix') != '/usr'
   error('Onboarding is a system application; configure Meson with --prefix=/usr')
@@ -39,7 +39,6 @@ python.install_sources(
 
 python.install_sources(
   'src/multi_settings/services/__init__.py',
-  'src/multi_settings/services/desktop_shortcut.py',
   'src/multi_settings/services/hardening.py',
   'src/multi_settings/services/hardening_results.py',
   'src/multi_settings/services/privileged.py',
@@ -62,10 +61,10 @@ python.install_sources(
 
 install_data('bin/multi-settings', install_dir: get_option('bindir'), install_mode: 'rwxr-xr-x')
 install_data('bin/multi-settings-helper', install_dir: get_option('libexecdir'), install_mode: 'rwxr-xr-x')
-install_data('data/io.github.wrrm.multisettings.desktop', install_dir: get_option('datadir') / 'applications')
-install_data('data/io.github.wrrm.multisettings.metainfo.xml', install_dir: get_option('datadir') / 'metainfo')
-install_data('data/io.github.wrrm.multisettings.svg', install_dir: get_option('datadir') / 'icons/hicolor/scalable/apps')
-install_data('data/io.github.wrrm.multisettings.policy', install_dir: get_option('datadir') / 'polkit-1/actions')
+install_data('data/org.onboarding.settings.desktop', install_dir: get_option('datadir') / 'applications')
+install_data('data/org.onboarding.settings.metainfo.xml', install_dir: get_option('datadir') / 'metainfo')
+install_data('data/org.onboarding.settings.svg', install_dir: get_option('datadir') / 'icons/hicolor/scalable/apps')
+install_data('data/org.onboarding.settings.policy', install_dir: get_option('datadir') / 'polkit-1/actions')
 install_data('data/ansible/site.yml', install_dir: get_option('datadir') / 'multi-settings/ansible')
 install_data('data/ansible/requirements.yml', install_dir: get_option('datadir') / 'multi-settings/ansible')
 install_data('data/ansible/callback_plugins/multi_settings_jsonl.py', install_dir: get_option('datadir') / 'multi-settings/ansible/callback_plugins')
