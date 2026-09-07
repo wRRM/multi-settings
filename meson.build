@@ -62,7 +62,6 @@ python.install_sources(
 install_data('bin/multi-settings', install_dir: get_option('bindir'), install_mode: 'rwxr-xr-x')
 install_data('bin/multi-settings-helper', install_dir: get_option('libexecdir'), install_mode: 'rwxr-xr-x')
 install_data('data/org.onboarding.settings.desktop', install_dir: get_option('datadir') / 'applications')
-install_data('data/org.onboarding.settings.metainfo.xml', install_dir: get_option('datadir') / 'metainfo')
 install_data('data/org.onboarding.settings.svg', install_dir: get_option('datadir') / 'icons/hicolor/scalable/apps')
 install_data('data/org.onboarding.settings.policy', install_dir: get_option('datadir') / 'polkit-1/actions')
 install_data('data/ansible/site.yml', install_dir: get_option('datadir') / 'multi-settings/ansible')

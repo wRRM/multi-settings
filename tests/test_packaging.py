@@ -45,17 +45,16 @@ class PackagingTests(unittest.TestCase):
         app_id = "org.onboarding.settings"
         config = (ROOT / "src/multi_settings/config.py").read_text(encoding="utf-8")
         desktop = (ROOT / f"data/{app_id}.desktop").read_text(encoding="utf-8")
-        metainfo = (ROOT / f"data/{app_id}.metainfo.xml").read_text(encoding="utf-8")
         policy = (ROOT / f"data/{app_id}.policy").read_text(encoding="utf-8")
         meson = (ROOT / "meson.build").read_text(encoding="utf-8")
 
         self.assertIn(f'APP_ID = "{app_id}"', config)
         self.assertIn(f"Icon={app_id}", desktop)
-        self.assertIn(f"<id>{app_id}</id>", metainfo)
         self.assertIn(f'<action id="{app_id}.manage">', policy)
         self.assertIn(f"data/{app_id}.desktop", meson)
+        self.assertFalse((ROOT / f"data/{app_id}.metainfo.xml").exists())
 
-        for content in (config, desktop, metainfo, policy, meson):
+        for content in (config, desktop, policy, meson):
             self.assertNotIn("io.github", content.casefold())
             self.assertNotIn("github.com", content.casefold())
 
