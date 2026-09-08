@@ -1,4 +1,4 @@
-project('multi-settings', version: '0.3.3', meson_version: '>= 1.3.0')
+project('multi-settings', version: '0.3.4', meson_version: '>= 1.3.0')
 
 if get_option('prefix') != '/usr'
   error('Onboarding is a system application; configure Meson with --prefix=/usr')

@@ -1,3 +1,10 @@
+multi-settings (0.3.4) resolute; urgency=medium
+
+  * Accept DevSec variables declared only in role argument specifications.
+  * Preserve flat and nested numeric custom-setting values during import.
+
+ -- Onboarding Contributors <onboarding@example.org>  Tue, 08 Sep 2026 18:48:42 +0200
+
 multi-settings (0.3.3) resolute; urgency=medium
 
   * Allow validated custom settings to be injected into manual package builds.

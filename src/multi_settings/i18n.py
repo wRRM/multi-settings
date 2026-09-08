@@ -194,6 +194,8 @@ _SWEDISH: dict[str, str] = {
     "The Onboarding state has an invalid format.": "Onboardings tillstånd har ett ogiltigt format.",
     "Could not read trusted {role_name} defaults: {error}": "Kunde inte läsa betrodda standardvärden för {role_name}: {error}",
     "The installed {role_name} defaults are invalid.": "De installerade standardvärdena för {role_name} är ogiltiga.",
+    "Could not read trusted {role_name} argument specification: {error}": "Kunde inte läsa den betrodda argumentspecifikationen för {role_name}: {error}",
+    "The installed {role_name} argument specification is invalid.": "Den installerade argumentspecifikationen för {role_name} är ogiltig.",
     "Unsupported hardening variable: {variables}": "Härdningsvariabeln stöds inte: {variables}",
     "Unsupported hardening variables: {variables}": "Härdningsvariablerna stöds inte: {variables}",
     "Could not identify the operating system: {error}": "Kunde inte identifiera operativsystemet: {error}",

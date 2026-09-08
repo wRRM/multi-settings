@@ -45,7 +45,8 @@ def selected_hardening_tags(payload: dict[str, Any]) -> tuple[str, ...]:
 def validate_hardening_variables(variables: dict[str, Any], roles_root: Path) -> None:
     allowed_names: set[str] = set()
     for role_name in ("os_hardening", "ssh_hardening"):
-        defaults_path = roles_root / role_name / "defaults/main.yml"
+        role_root = roles_root / role_name
+        defaults_path = role_root / "defaults/main.yml"
         try:
             defaults = yaml.safe_load(defaults_path.read_text(encoding="utf-8"))
         except (OSError, yaml.YAMLError) as error:
@@ -61,6 +62,33 @@ def validate_hardening_variables(variables: dict[str, Any], roles_root: Path) ->
                 )
             )
         allowed_names.update(str(name) for name in defaults)
+
+        argument_specs_path = role_root / "meta/argument_specs.yml"
+        try:
+            argument_specs = yaml.safe_load(
+                argument_specs_path.read_text(encoding="utf-8")
+            )
+        except (OSError, yaml.YAMLError) as error:
+            raise ValidationError(
+                _("Could not read trusted {role_name} argument specification: {error}").format(
+                    role_name=role_name, error=error
+                )
+            ) from error
+        try:
+            options = argument_specs["argument_specs"]["main"]["options"]
+        except (KeyError, TypeError) as error:
+            raise ValidationError(
+                _("The installed {role_name} argument specification is invalid.").format(
+                    role_name=role_name
+                )
+            ) from error
+        if not isinstance(options, dict):
+            raise ValidationError(
+                _("The installed {role_name} argument specification is invalid.").format(
+                    role_name=role_name
+                )
+            )
+        allowed_names.update(str(name) for name in options)
     unknown = sorted(set(variables) - allowed_names)
     if unknown:
         template = (

@@ -144,17 +144,45 @@ class HelperTests(unittest.TestCase):
                     }
                 )
 
-    def test_hardening_variables_are_limited_to_pinned_role_defaults(self) -> None:
+    def test_hardening_variables_are_limited_to_role_interface(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             roles = Path(directory)
-            for role, content in (
-                ("os_hardening", "os_env_umask: '027'\nsysctl_config: {}\n"),
-                ("ssh_hardening", "ssh_server_ports: ['22']\n"),
+            for role, content, spec_only_variable, spec_type in (
+                (
+                    "os_hardening",
+                    "os_env_umask: '027'\nsysctl_config: {}\n",
+                    "os_auth_uid_min",
+                    "int",
+                ),
+                (
+                    "ssh_hardening",
+                    "ssh_server_ports: ['22']\n",
+                    "ssh_ciphers",
+                    "list",
+                ),
             ):
                 defaults = roles / role / "defaults"
                 defaults.mkdir(parents=True)
                 (defaults / "main.yml").write_text(content, encoding="utf-8")
-            validate_hardening_variables({"os_env_umask": "027", "ssh_server_ports": [22]}, roles)
+                metadata = roles / role / "meta"
+                metadata.mkdir()
+                (metadata / "argument_specs.yml").write_text(
+                    "argument_specs:\n"
+                    "  main:\n"
+                    "    options:\n"
+                    f"      {spec_only_variable}:\n"
+                    f"        type: {spec_type}\n",
+                    encoding="utf-8",
+                )
+            validate_hardening_variables(
+                {
+                    "os_env_umask": "027",
+                    "os_auth_uid_min": 1100,
+                    "ssh_server_ports": [22],
+                    "ssh_ciphers": ["aes256-gcm@openssh.com"],
+                },
+                roles,
+            )
             with self.assertRaises(ValidationError):
                 validate_hardening_variables({"ansible_python_interpreter": "/tmp/owned"}, roles)
 
@@ -165,6 +193,12 @@ class HelperTests(unittest.TestCase):
                 defaults = roles / role / "defaults"
                 defaults.mkdir(parents=True)
                 (defaults / "main.yml").write_text("allowed_value: safe\n", encoding="utf-8")
+                metadata = roles / role / "meta"
+                metadata.mkdir()
+                (metadata / "argument_specs.yml").write_text(
+                    "argument_specs:\n  main:\n    options: {}\n",
+                    encoding="utf-8",
+                )
             with self.assertRaises(ValidationError):
                 validate_hardening_variables(
                     {"allowed_value": "{{ lookup('pipe', 'id') }}"}, roles

@@ -76,6 +76,12 @@ Do not put passwords or other secrets in it: packaged settings are readable by
 local users. A signed-in user's private settings file overrides matching
 top-level values from the package.
 
+Settings use the flat DevSec role-variable form, for example
+`os_auth_uid_min: 1100`. Variables declared in either the role defaults or its
+argument specification are accepted. For individual sysctl changes, use
+`sysctl_overwrite` as documented by DevSec rather than replacing
+`sysctl_config`.
+
 Run the headless unit tests with:
 
 ```sh
@@ -87,7 +93,7 @@ PYTHONPATH=src python3 -m unittest discover -s tests -v
 GitHub Actions builds an Ubuntu 26.04 `Architecture: all` package after every
 push to `main`. The package and its SHA-256 checksum are available on the
 workflow run's **Artifacts** page for 30 days. Pushing a tag matching the Debian
-version, such as `v0.3.3`, also publishes the `.deb` and checksum on a GitHub
+version, such as `v0.3.4`, also publishes the `.deb` and checksum on a GitHub
 Release.
 
 The package embeds the checksum-pinned DevSec hardening collection, so an

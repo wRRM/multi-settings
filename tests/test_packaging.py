@@ -70,7 +70,12 @@ class PackagingTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             source = root / "settings.yaml"
-            source.write_text("os_env_umask: '027'\n", encoding="utf-8")
+            source.write_text(
+                "os_auth_uid_min: 1100\n"
+                "sysctl_overwrite:\n"
+                "  kernel.randomize_va_space: 2\n",
+                encoding="utf-8",
+            )
             vendor = root / "vendor"
             environment = dict(os.environ)
             environment["MULTI_SETTINGS_VENDOR_DIR"] = str(vendor)
@@ -86,7 +91,12 @@ class PackagingTests(unittest.TestCase):
 
             self.assertEqual(result.returncode, 0, result.stderr)
             staged = vendor / "custom-settings.yaml"
-            self.assertEqual(staged.read_text(encoding="utf-8"), "os_env_umask: '027'\n")
+            self.assertEqual(
+                staged.read_text(encoding="utf-8"),
+                "os_auth_uid_min: 1100\n"
+                "sysctl_overwrite:\n"
+                "  kernel.randomize_va_space: 2\n",
+            )
             self.assertEqual(staged.stat().st_mode & 0o777, 0o600)
 
         meson = (ROOT / "meson.build").read_text(encoding="utf-8")
