@@ -1,10 +1,11 @@
-project('multi-settings', version: '0.3.2', meson_version: '>= 1.3.0')
+project('multi-settings', version: '0.3.3', meson_version: '>= 1.3.0')
 
 if get_option('prefix') != '/usr'
   error('Onboarding is a system application; configure Meson with --prefix=/usr')
 endif
 
 gnome = import('gnome')
+fs = import('fs')
 python = import('python').find_installation('python3')
 dependency('gtk4', version: '>= 4.14')
 dependency('libadwaita-1', version: '>= 1.5')
@@ -67,4 +68,11 @@ install_data('data/org.onboarding.settings.policy', install_dir: get_option('dat
 install_data('data/ansible/site.yml', install_dir: get_option('datadir') / 'multi-settings/ansible')
 install_data('data/ansible/requirements.yml', install_dir: get_option('datadir') / 'multi-settings/ansible')
 install_data('data/ansible/callback_plugins/multi_settings_jsonl.py', install_dir: get_option('datadir') / 'multi-settings/ansible/callback_plugins')
+if fs.exists('vendor/custom-settings.yaml')
+  install_data(
+    'vendor/custom-settings.yaml',
+    install_dir: get_option('datadir') / 'multi-settings',
+    install_mode: 'rw-r--r--',
+  )
+endif
 gnome.post_install(gtk_update_icon_cache: true, update_desktop_database: true)

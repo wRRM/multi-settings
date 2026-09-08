@@ -1,0 +1,47 @@
+#!/usr/bin/python3
+from __future__ import annotations
+
+import os
+import sys
+from pathlib import Path
+
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(PROJECT_ROOT / "src"))
+
+from multi_settings.domain.validation import ValidationError  # noqa: E402
+from multi_settings.i18n import set_language  # noqa: E402
+from multi_settings.services.settings import CustomSettingsService  # noqa: E402
+
+
+def main(arguments: list[str]) -> int:
+    set_language("en")
+    if len(arguments) != 2:
+        print(f"Usage: {arguments[0]} custom-settings.yaml", file=sys.stderr)
+        return 64
+
+    source = Path(arguments[1]).expanduser()
+    vendor_directory = Path(
+        os.environ.get("MULTI_SETTINGS_VENDOR_DIR", PROJECT_ROOT / "vendor")
+    )
+    destination = vendor_directory / "custom-settings.yaml"
+    try:
+        settings = CustomSettingsService(destination).import_file(source)
+    except (OSError, ValidationError) as error:
+        print(f"Could not import custom settings: {error}", file=sys.stderr)
+        return 65
+
+    displayed_destination = (
+        destination.relative_to(PROJECT_ROOT)
+        if destination.is_relative_to(PROJECT_ROOT)
+        else destination
+    )
+    print(
+        f"Imported {len(settings)} top-level setting(s) into "
+        f"{displayed_destination}."
+    )
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main(sys.argv))

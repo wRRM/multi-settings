@@ -99,7 +99,7 @@ class HardeningPage(Gtk.Box):
 
         settings, settings_body = section(
             _("Custom settings"),
-            _("Settings are automatically loaded from ~/.config/multi-settings/custom-settings.yaml before every audit or apply operation."),
+            _("Settings are loaded from the package and then ~/.config/multi-settings/custom-settings.yaml. Your settings take precedence."),
         )
         settings_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
         settings_row.set_margin_top(12)
@@ -228,7 +228,7 @@ class HardeningPage(Gtk.Box):
             self.notify(str(error))
             return
         self._update_settings_label()
-        self.notify(_("Imported custom settings. They will override role defaults."))
+        self.notify(_("Imported custom settings. They will override package and role defaults."))
 
     def _run(self, *, audit: bool) -> None:
         if self.running:

@@ -15,6 +15,7 @@ MAPPING_FILE = Path("/etc/u2f_mappings")
 PAM_BACKUP_DIR = STATE_DIR / "pam-backups"
 
 DATA_DIR = Path(os.environ.get("MULTI_SETTINGS_DATA_DIR", "/usr/share/multi-settings"))
+BUNDLED_SETTINGS_FILE = DATA_DIR / "custom-settings.yaml"
 PLAYBOOK_PATH = DATA_DIR / "ansible/site.yml"
 CALLBACK_DIR = DATA_DIR / "ansible/callback_plugins"
 COLLECTIONS_PATH = DATA_DIR / "collections"

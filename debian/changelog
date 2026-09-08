@@ -1,3 +1,10 @@
+multi-settings (0.3.3) resolute; urgency=medium
+
+  * Allow validated custom settings to be injected into manual package builds.
+  * Load user settings on top of injected package settings.
+
+ -- Onboarding Contributors <onboarding@example.org>  Tue, 08 Sep 2026 11:39:48 +0200
+
 multi-settings (0.3.2) resolute; urgency=medium
 
   * Remove GitHub account identifiers from application metadata.

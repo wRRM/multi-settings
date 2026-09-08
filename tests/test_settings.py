@@ -52,6 +52,28 @@ class SettingsTests(unittest.TestCase):
             self.assertEqual(service.load(), loaded)
             self.assertEqual(destination.stat().st_mode & 0o777, 0o600)
 
+    def test_user_settings_override_bundled_build_settings(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            bundled = root / "bundled.yaml"
+            bundled.write_text(
+                "os_env_umask: '027'\nssh_server_ports: [22]\n",
+                encoding="utf-8",
+            )
+            user = root / "config" / "custom-settings.yaml"
+            user.parent.mkdir()
+            user.write_text("ssh_server_ports: [2222]\n", encoding="utf-8")
+
+            loaded = CustomSettingsService(
+                user,
+                bundled_settings=bundled,
+            ).load()
+
+            self.assertEqual(
+                loaded,
+                {"os_env_umask": "027", "ssh_server_ports": [2222]},
+            )
+
     def test_import_rejects_yaml_sequence_at_root(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             source = Path(directory) / "input.yml"

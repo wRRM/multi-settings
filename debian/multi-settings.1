@@ -1,4 +1,4 @@
-.TH MULTI-SETTINGS 1 "September 2026" "Onboarding 0.3.2" "User Commands"
+.TH MULTI-SETTINGS 1 "September 2026" "Onboarding 0.3.3" "User Commands"
 .SH NAME
 multi-settings \- manage Ubuntu accounts, YubiKeys, and system hardening
 .SH SYNOPSIS
@@ -15,7 +15,11 @@ the system are delegated to a PolicyKit-authorized helper.
 .SH FILES
 .TP
 .I ~/.config/multi-settings/custom-settings.yaml
-Automatically loaded Ansible settings that override the hardening role defaults.
+Automatically loaded user settings that override bundled settings and the
+hardening role defaults.
+.TP
+.I /usr/share/multi-settings/custom-settings.yaml
+Optional settings injected while building the package manually.
 .TP
 .I /var/lib/multi-settings
 Protected application state.

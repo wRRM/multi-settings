@@ -7,7 +7,7 @@ from typing import Any
 
 import yaml
 
-from multi_settings.config import user_config_dir
+from multi_settings.config import BUNDLED_SETTINGS_FILE, user_config_dir
 from multi_settings.domain.validation import (
     ValidationError,
     reject_template_expressions,
@@ -50,18 +50,30 @@ UniqueKeySafeLoader.add_constructor(
 
 
 class CustomSettingsService:
-    def __init__(self, destination: Path | None = None) -> None:
+    def __init__(
+        self,
+        destination: Path | None = None,
+        bundled_settings: Path | None = None,
+    ) -> None:
         if destination is None:
             config_directory = user_config_dir()
             self.destination = config_directory / "custom-settings.yaml"
             self.legacy_destination: Path | None = config_directory / "custom-settings.yml"
             self.manages_config_directory = True
+            self.bundled_settings = bundled_settings or BUNDLED_SETTINGS_FILE
         else:
             self.destination = destination
             self.legacy_destination = None
             self.manages_config_directory = False
+            self.bundled_settings = bundled_settings
 
     def import_file(self, source: Path) -> dict[str, Any]:
+        clean = self._read_file(source)
+        self._save(clean)
+        return self._merge_with_bundled(clean)
+
+    @staticmethod
+    def _read_file(source: Path) -> dict[str, Any]:
         if not source.is_file():
             raise ValidationError(_("Choose an existing YAML file."))
         if source.stat().st_size > 1_048_576:
@@ -76,7 +88,6 @@ class CustomSettingsService:
             raise ValidationError(_("The top-level YAML value must be a mapping."))
         clean = validate_yaml_value(loaded)
         reject_template_expressions(clean)
-        self._save(clean)
         return clean
 
     def load(self) -> dict[str, Any]:
@@ -94,8 +105,17 @@ class CustomSettingsService:
         if not source.exists() and self.legacy_destination is not None:
             source = self.legacy_destination
         if not source.exists():
-            return {}
-        return self.import_file(source)
+            return self._merge_with_bundled({})
+        user_settings = self._read_file(source)
+        self._save(user_settings)
+        return self._merge_with_bundled(user_settings)
+
+    def _merge_with_bundled(self, user_settings: dict[str, Any]) -> dict[str, Any]:
+        merged: dict[str, Any] = {}
+        if self.bundled_settings is not None and self.bundled_settings.exists():
+            merged.update(self._read_file(self.bundled_settings))
+        merged.update(user_settings)
+        return merged
 
     def _save(self, settings: dict[str, Any]) -> None:
         self.destination.parent.mkdir(mode=0o700, parents=True, exist_ok=True)

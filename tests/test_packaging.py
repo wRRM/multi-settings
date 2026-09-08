@@ -1,6 +1,10 @@
 from __future__ import annotations
 
+import os
 import re
+import subprocess
+import sys
+import tempfile
 import tomllib
 import unittest
 from pathlib import Path
@@ -16,6 +20,10 @@ class PackagingTests(unittest.TestCase):
         project = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
         self.assertEqual(project["project"]["version"], debian_version)
         self.assertIn(f"version: '{debian_version}'", (ROOT / "meson.build").read_text(encoding="utf-8"))
+        self.assertIn(
+            f'__version__ = "{debian_version}"',
+            (ROOT / "src/multi_settings/__init__.py").read_text(encoding="utf-8"),
+        )
 
     def test_workflow_actions_use_full_commit_shas(self) -> None:
         workflow = (ROOT / ".github/workflows/debian-package.yml").read_text(encoding="utf-8")
@@ -57,6 +65,33 @@ class PackagingTests(unittest.TestCase):
         for content in (config, desktop, policy, meson):
             self.assertNotIn("io.github", content.casefold())
             self.assertNotIn("github.com", content.casefold())
+
+    def test_manual_build_settings_importer_stages_valid_yaml(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source = root / "settings.yaml"
+            source.write_text("os_env_umask: '027'\n", encoding="utf-8")
+            vendor = root / "vendor"
+            environment = dict(os.environ)
+            environment["MULTI_SETTINGS_VENDOR_DIR"] = str(vendor)
+
+            result = subprocess.run(
+                [sys.executable, str(ROOT / "scripts/import-custom-settings"), str(source)],
+                cwd=ROOT,
+                env=environment,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            staged = vendor / "custom-settings.yaml"
+            self.assertEqual(staged.read_text(encoding="utf-8"), "os_env_umask: '027'\n")
+            self.assertEqual(staged.stat().st_mode & 0o777, 0o600)
+
+        meson = (ROOT / "meson.build").read_text(encoding="utf-8")
+        self.assertIn("fs.exists('vendor/custom-settings.yaml')", meson)
+        self.assertIn("'vendor/custom-settings.yaml'", meson)
 
 
 if __name__ == "__main__":

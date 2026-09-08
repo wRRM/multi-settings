@@ -60,6 +60,20 @@ jobs:
       - name: Import or fetch pinned hardening collection
         run: ./scripts/fetch-hardening-content
 
+      - name: Verify optional custom settings injection
+        run: |
+          cleanup() {
+            rm -f vendor/custom-settings.yaml
+            rm -rf .ci-injection-build "${RUNNER_TEMP}/multi-settings-injection-root"
+          }
+          trap cleanup EXIT
+          ./scripts/import-custom-settings tests/fixtures/custom-settings.yaml
+          meson setup .ci-injection-build --prefix=/usr
+          DESTDIR="${RUNNER_TEMP}/multi-settings-injection-root" \
+            meson install -C .ci-injection-build
+          cmp tests/fixtures/custom-settings.yaml \
+            "${RUNNER_TEMP}/multi-settings-injection-root/usr/share/multi-settings/custom-settings.yaml"
+
       - name: Build binary package
         run: dpkg-buildpackage --build=binary --unsigned-changes
 

@@ -9,8 +9,9 @@ hardening Ubuntu 26.04 workstations. It provides:
 - password + YubiKey enforcement for graphical/console login and `sudo`;
 - independent or combined audit and application of the DevSec `os_hardening`
   and `ssh_hardening` Ansible roles;
-- automatic loading of `~/.config/multi-settings/custom-settings.yaml`, whose
-  values have highest precedence;
+- automatic loading of optional package settings followed by
+  `~/.config/multi-settings/custom-settings.yaml`, whose values have highest
+  precedence;
 - task-by-task hardening results with success, skipped, and failed states,
   exportable as a private CSV file.
 
@@ -61,10 +62,24 @@ execute either role. To use a previously downloaded archive, import it with:
 
 Archives for other versions or archives whose checksum differs are rejected.
 
+To inject organization-specific hardening settings into a manual build, stage
+the YAML file before configuring or building the package:
+
+```sh
+./scripts/import-custom-settings /path/to/custom-settings.yaml
+```
+
+The importer validates the YAML, rejects duplicate keys and Jinja expressions,
+and writes `vendor/custom-settings.yaml`. That file is ignored by Git and is
+included in the package as `/usr/share/multi-settings/custom-settings.yaml`.
+Do not put passwords or other secrets in it: packaged settings are readable by
+local users. A signed-in user's private settings file overrides matching
+top-level values from the package.
+
 Run the headless unit tests with:
 
 ```sh
-python3 -m unittest discover -s tests -v
+PYTHONPATH=src python3 -m unittest discover -s tests -v
 ```
 
 ## Debian package
@@ -72,7 +87,7 @@ python3 -m unittest discover -s tests -v
 GitHub Actions builds an Ubuntu 26.04 `Architecture: all` package after every
 push to `main`. The package and its SHA-256 checksum are available on the
 workflow run's **Artifacts** page for 30 days. Pushing a tag matching the Debian
-version, such as `v0.3.0`, also publishes the `.deb` and checksum on a GitHub
+version, such as `v0.3.3`, also publishes the `.deb` and checksum on a GitHub
 Release.
 
 The package embeds the checksum-pinned DevSec hardening collection, so an
@@ -83,6 +98,7 @@ is unavailable. To build the same package locally on Ubuntu 26.04:
 ```sh
 sudo apt build-dep .
 ./scripts/fetch-hardening-content
+# Optional: ./scripts/import-custom-settings /path/to/custom-settings.yaml
 dpkg-buildpackage --build=binary --unsigned-changes
 ```
 
