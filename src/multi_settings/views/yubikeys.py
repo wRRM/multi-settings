@@ -28,6 +28,8 @@ class YubiKeysPage(Gtk.Box):
         self.polling = False
         self.stopped = False
         self.poll_source: int | None = None
+        self.selected_username: str | None = None
+        self.rebuilding_accounts = False
         self.set_margin_top(32)
         self.set_margin_bottom(32)
         self.set_margin_start(32)
@@ -45,6 +47,7 @@ class YubiKeysPage(Gtk.Box):
         )
         selectors = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
         self.account = Gtk.ComboBoxText(hexpand=True)
+        self.account.connect("changed", self._account_changed)
         self.slot = Gtk.ComboBoxText()
         self.slot.append(KeySlot.PRIMARY.value, _("Primary"))
         self.slot.append(KeySlot.SECONDARY.value, _("Secondary"))
@@ -96,19 +99,28 @@ class YubiKeysPage(Gtk.Box):
             self.poll_source = None
 
     def refresh(self) -> None:
-        selected = self.account.get_active_id()
+        self.refresh_accounts()
+        self._poll_connected()
+        self._refresh_enrolled()
+        self._load_policy_state()
+
+    def refresh_accounts(self, preferred_username: str | None = None) -> None:
+        selected = preferred_username or self.selected_username
+        self.rebuilding_accounts = True
         self.account.remove_all()
         for user in SystemUserService.list_interactive_users():
             role = _("administrator") if user.is_administrator else _("standard")
             label = f"{user.username} ({role})"
             self.account.append(user.username, label)
-        if selected is not None:
-            self.account.set_active_id(selected)
-        if self.account.get_active() < 0:
+        restored = selected is not None and self.account.set_active_id(selected)
+        if not restored:
             self.account.set_active(0)
-        self._poll_connected()
-        self._refresh_enrolled()
-        self._load_policy_state()
+        self.rebuilding_accounts = False
+        self.selected_username = self.account.get_active_id()
+
+    def _account_changed(self, account: Gtk.ComboBoxText) -> None:
+        if not self.rebuilding_accounts:
+            self.selected_username = account.get_active_id()
 
     def _poll_connected(self) -> bool:
         if self.stopped:
@@ -200,7 +212,7 @@ class YubiKeysPage(Gtk.Box):
         self.sudo_switch.set_active(pam.get("sudo") is True)
 
     def _enroll(self, _button: Gtk.Button, serial: str) -> None:
-        username = self.account.get_active_id()
+        username = self.selected_username
         slot_name = self.slot.get_active_id()
         if username is None or slot_name is None:
             self.notify(_("Choose an account and slot."))

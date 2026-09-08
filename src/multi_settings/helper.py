@@ -8,6 +8,7 @@ import sys
 from multi_settings.domain.validation import ValidationError
 from multi_settings.i18n import SUPPORTED_LANGUAGES, _, set_language
 from multi_settings.privileged.hardening import hardening_run
+from multi_settings.privileged.hardening_backup import restore_hardening_backup
 from multi_settings.privileged.pam import configure_pam
 from multi_settings.privileged.protocol import MAX_REQUEST_BYTES, fail
 from multi_settings.privileged.users import create_user, delete_user
@@ -20,6 +21,7 @@ ACTIONS = {
     "yubikey.unenroll": unenroll_yubikey,
     "pam.configure": configure_pam,
     "hardening.run": hardening_run,
+    "hardening.restore": restore_hardening_backup,
 }
 
 

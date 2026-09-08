@@ -22,6 +22,10 @@ class StateTests(unittest.TestCase):
                 }
             ],
             "pam": {"login": True, "sudo": False},
+            "hardening_backup": {
+                "id": "20260908T120000Z-012345abcdef",
+                "status": "available",
+            },
         }
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -38,6 +42,10 @@ class StateTests(unittest.TestCase):
             private = json.loads(private_path.read_text(encoding="utf-8"))
             self.assertNotIn("credential", public["enrollments"][0])
             self.assertIn("credential", private["enrollments"][0])
+            self.assertEqual(
+                public["hardening_backup"]["id"],
+                "20260908T120000Z-012345abcdef",
+            )
             self.assertEqual(public_path.stat().st_mode & 0o777, 0o644)
             self.assertEqual(private_path.stat().st_mode & 0o777, 0o600)
 

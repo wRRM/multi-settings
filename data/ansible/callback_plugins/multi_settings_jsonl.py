@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 
 from ansible.plugins.callback import CallbackBase
+from multi_settings.ansible_callback import result_details
 
 
 DOCUMENTATION = r"""
@@ -32,12 +33,8 @@ class CallbackModule(CallbackBase):
         return role.get_name() if role is not None else ""
 
     @staticmethod
-    def _details(result):
-        data = result._result
-        for key in ("msg", "stderr", "module_stdout"):
-            if data.get(key):
-                return str(data[key])[:2_000]
-        return ""
+    def _details(result, status):
+        return result_details(result._result, status)
 
     def v2_playbook_on_task_start(self, task, is_conditional):
         self._emit("task_start", task=task.get_name().strip())
@@ -49,7 +46,7 @@ class CallbackModule(CallbackBase):
             role=self._role_name(result),
             status="success",
             changed=bool(result._result.get("changed", False)),
-            details=self._details(result),
+            details=self._details(result, "success"),
         )
 
     def v2_runner_on_skipped(self, result):
@@ -59,7 +56,7 @@ class CallbackModule(CallbackBase):
             role=self._role_name(result),
             status="skipped",
             changed=False,
-            details=self._details(result),
+            details=self._details(result, "skipped"),
         )
 
     def v2_runner_on_failed(self, result, ignore_errors=False):
@@ -69,7 +66,7 @@ class CallbackModule(CallbackBase):
             role=self._role_name(result),
             status="failed",
             changed=bool(result._result.get("changed", False)),
-            details=self._details(result),
+            details=self._details(result, "failed"),
         )
 
     def v2_playbook_on_stats(self, stats):

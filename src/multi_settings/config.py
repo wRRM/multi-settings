@@ -13,6 +13,7 @@ STATE_FILE = STATE_DIR / "state.json"
 PRIVATE_STATE_FILE = STATE_DIR / "private-state.json"
 MAPPING_FILE = Path("/etc/u2f_mappings")
 PAM_BACKUP_DIR = STATE_DIR / "pam-backups"
+HARDENING_BACKUP_DIR = STATE_DIR / "hardening-backups"
 
 DATA_DIR = Path(os.environ.get("MULTI_SETTINGS_DATA_DIR", "/usr/share/multi-settings"))
 BUNDLED_SETTINGS_FILE = DATA_DIR / "custom-settings.yaml"

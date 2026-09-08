@@ -36,5 +36,6 @@ def save_state(state: dict[str, Any]) -> None:
             for item in state.get("enrollments", [])
         ],
         "pam": state.get("pam", {"login": False, "sudo": False}),
+        "hardening_backup": state.get("hardening_backup"),
     }
     atomic_write(STATE_FILE, json.dumps(public_state, indent=2, sort_keys=True) + "\n", 0o644)

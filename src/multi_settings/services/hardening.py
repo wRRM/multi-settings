@@ -50,3 +50,14 @@ class HardeningService:
             callback,
             event_callback,
         )
+
+    def restore_async(
+        self,
+        backup_id: str,
+        callback: Callable[[PrivilegedResponse], None],
+    ) -> None:
+        self.privileged.run_async(
+            "hardening.restore",
+            {"backup_id": backup_id},
+            callback,
+        )

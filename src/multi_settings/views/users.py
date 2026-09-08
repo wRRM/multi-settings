@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+from collections.abc import Callable
 
 import gi
 
@@ -18,10 +19,16 @@ from multi_settings.views.common import clear_box, form_row, page_title, section
 
 
 class UsersPage(Gtk.Box):
-    def __init__(self, notify, parent_window: Gtk.Window) -> None:
+    def __init__(
+        self,
+        notify,
+        parent_window: Gtk.Window,
+        accounts_changed: Callable[[str | None], None],
+    ) -> None:
         super().__init__(orientation=Gtk.Orientation.VERTICAL, spacing=28)
         self.notify = notify
         self.parent_window = parent_window
+        self.accounts_changed = accounts_changed
         self.privileged = PrivilegedClient()
         self.set_margin_top(32)
         self.set_margin_bottom(32)
@@ -104,10 +111,12 @@ class UsersPage(Gtk.Box):
         self.confirm.set_text("")
         self.create_button.set_sensitive(False)
         self.privileged.run_async(
-            "user.create", payload, lambda response: GLib.idle_add(self._created, response)
+            "user.create",
+            payload,
+            lambda response: GLib.idle_add(self._created, response, username),
         )
 
-    def _created(self, response: PrivilegedResponse) -> bool:
+    def _created(self, response: PrivilegedResponse, username: str) -> bool:
         self.create_button.set_sensitive(True)
         self.notify(response.message)
         if response.ok:
@@ -115,6 +124,7 @@ class UsersPage(Gtk.Box):
             self.full_name.set_text("")
             self.administrator.set_active(False)
             self.refresh()
+            self.accounts_changed(username)
         return GLib.SOURCE_REMOVE
 
     def _confirm_remove(self, button: Gtk.Button, username: str) -> None:
@@ -155,6 +165,7 @@ class UsersPage(Gtk.Box):
         self.notify(response.message)
         if response.ok:
             self.refresh()
+            self.accounts_changed(None)
         else:
             button.set_sensitive(True)
         return GLib.SOURCE_REMOVE

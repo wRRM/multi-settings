@@ -1,4 +1,4 @@
-project('multi-settings', version: '0.3.4', meson_version: '>= 1.3.0')
+project('multi-settings', version: '0.3.5', meson_version: '>= 1.3.0')
 
 if get_option('prefix') != '/usr'
   error('Onboarding is a system application; configure Meson with --prefix=/usr')
@@ -14,6 +14,7 @@ python.install_sources(
   'src/multi_settings/__init__.py',
   'src/multi_settings/__main__.py',
   'src/multi_settings/application.py',
+  'src/multi_settings/ansible_callback.py',
   'src/multi_settings/config.py',
   'src/multi_settings/helper.py',
   'src/multi_settings/i18n.py',
@@ -30,6 +31,7 @@ python.install_sources(
 python.install_sources(
   'src/multi_settings/privileged/__init__.py',
   'src/multi_settings/privileged/hardening.py',
+  'src/multi_settings/privileged/hardening_backup.py',
   'src/multi_settings/privileged/pam.py',
   'src/multi_settings/privileged/protocol.py',
   'src/multi_settings/privileged/state.py',

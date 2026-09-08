@@ -13,7 +13,9 @@ hardening Ubuntu 26.04 workstations. It provides:
   `~/.config/multi-settings/custom-settings.yaml`, whose values have highest
   precedence;
 - task-by-task hardening results with success, skipped, and failed states,
-  exportable as a private CSV file.
+  including visible failure/skip reasons and export as a private CSV file;
+- a root-only pre-apply configuration backup with targeted restore of the paths
+  changed by that hardening run.
 
 The application interface defaults to Swedish. The header button switches the
 entire interface between Swedish and English and remembers that preference for
@@ -93,7 +95,7 @@ PYTHONPATH=src python3 -m unittest discover -s tests -v
 GitHub Actions builds an Ubuntu 26.04 `Architecture: all` package after every
 push to `main`. The package and its SHA-256 checksum are available on the
 workflow run's **Artifacts** page for 30 days. Pushing a tag matching the Debian
-version, such as `v0.3.4`, also publishes the `.deb` and checksum on a GitHub
+version, such as `v0.3.5`, also publishes the `.deb` and checksum on a GitHub
 Release.
 
 The package embeds the checksum-pinned DevSec hardening collection, so an
@@ -124,4 +126,9 @@ block.
 
 An audit is an Ansible check-mode run. Applying hardening changes the local
 machine and can affect SSH access, so review the audit and imported settings
-before selecting **Apply hardening**.
+before selecting **Apply hardening**. Immediately before an apply, Onboarding
+copies the relevant configuration into
+`/var/lib/multi-settings/hardening-backups` and records which paths Ansible
+actually changed. **Revert from backup** restores only those paths, then reloads
+system configuration and SSH. The backup does not remove packages installed by
+the role and is not a replacement for a full filesystem snapshot.

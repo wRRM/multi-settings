@@ -22,6 +22,10 @@ from multi_settings.domain.validation import (
     validate_yaml_value,
 )
 from multi_settings.i18n import _
+from multi_settings.privileged.hardening_backup import (
+    create_hardening_backup,
+    finalize_hardening_backup,
+)
 from multi_settings.privileged.protocol import SAFE_ENVIRONMENT, emit, fail
 
 HARDENING_COMPONENTS = {
@@ -153,7 +157,9 @@ def hardening_run(payload: dict[str, Any]) -> None:
     if not executable.is_file():
         raise ValidationError(_("ansible-playbook is not installed."))
 
+    backup_id: str | None = None
     descriptor, variables_path = tempfile.mkstemp(prefix="multi-settings-vars.", suffix=".json")
+    backup_finalized = False
     try:
         os.fchmod(descriptor, 0o600)
         with os.fdopen(descriptor, "w", encoding="utf-8") as stream:
@@ -180,6 +186,13 @@ def hardening_run(payload: dict[str, Any]) -> None:
         ]
         if mode == "audit":
             command.extend(("--check", "--diff"))
+        else:
+            backup_id = create_hardening_backup(selected_tags)
+            emit(
+                "backup_created",
+                backup_id=backup_id,
+                message=_("Created a configuration backup before applying hardening."),
+            )
         process = subprocess.Popen(
             command,
             stdout=subprocess.PIPE,
@@ -199,6 +212,9 @@ def hardening_run(payload: dict[str, Any]) -> None:
                 if rendered.strip():
                     last_unstructured_line = rendered.strip()
         return_code = process.wait()
+        if backup_id is not None:
+            finalize_hardening_backup(backup_id)
+            backup_finalized = True
         if return_code != 0:
             fail(last_unstructured_line or _("Ansible reported a failure."))
         emit(
@@ -206,6 +222,8 @@ def hardening_run(payload: dict[str, Any]) -> None:
             message=_("Audit completed.") if mode == "audit" else _("Hardening completed."),
         )
     finally:
+        if backup_id is not None and not backup_finalized:
+            finalize_hardening_backup(backup_id)
         try:
             os.unlink(variables_path)
         except FileNotFoundError:

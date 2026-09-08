@@ -57,8 +57,9 @@ class MainWindow(Adw.ApplicationWindow):
         self._add_page(OverviewPage(), "overview", _("Overview"), "computer-symbolic")
         self.hardening_page = HardeningPage(self.notify, self)
         self._add_page(self.hardening_page, "hardening", _("Hardening"), "security-high-symbolic")
-        self._add_page(UsersPage(self.notify, self), "users", _("Users"), "system-users-symbolic")
         self.yubikeys_page = YubiKeysPage(self.notify)
+        self.users_page = UsersPage(self.notify, self, self._accounts_changed)
+        self._add_page(self.users_page, "users", _("Users"), "system-users-symbolic")
         self._add_page(self.yubikeys_page, "yubikeys", "YubiKeys", "dialog-password-symbolic")
         self.stack.set_visible_child_name(visible_page)
 
@@ -68,6 +69,9 @@ class MainWindow(Adw.ApplicationWindow):
 
     def notify(self, message: str) -> None:
         self.toast_overlay.add_toast(Adw.Toast.new(message))
+
+    def _accounts_changed(self, preferred_username: str | None) -> None:
+        self.yubikeys_page.refresh_accounts(preferred_username)
 
     def _switch_language(self, _button: Gtk.Button, language: str) -> None:
         if self.hardening_page.running:

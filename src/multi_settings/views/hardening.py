@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-from pathlib import Path
+import json
 from datetime import datetime
+from pathlib import Path
 from typing import Any
 
 import gi
@@ -12,7 +13,7 @@ gi.require_version("Gtk", "4.0")
 
 from gi.repository import Adw, GLib, Gtk, Pango
 
-from multi_settings.config import HARDENING_COLLECTION_VERSION
+from multi_settings.config import HARDENING_COLLECTION_VERSION, STATE_FILE
 from multi_settings.domain.models import HardeningResult, TaskStatus
 from multi_settings.domain.validation import ValidationError
 from multi_settings.i18n import _
@@ -27,6 +28,7 @@ class ResultRow(Gtk.ListBoxRow):
     def __init__(self, result: HardeningResult) -> None:
         super().__init__()
         self.result = result
+        content = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
         row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
         row.set_margin_top(8)
         row.set_margin_bottom(8)
@@ -56,7 +58,20 @@ class ResultRow(Gtk.ListBoxRow):
         row.append(role_label)
         row.append(status)
         row.append(changed)
-        self.set_child(row)
+        content.append(row)
+        if result.status in (TaskStatus.SKIPPED, TaskStatus.FAILED):
+            detail = Gtk.Label(
+                label=_("Reason: {details}").format(details=result.details),
+                xalign=0,
+                wrap=True,
+                selectable=True,
+                css_classes=["dim-label"],
+            )
+            detail.set_margin_start(12)
+            detail.set_margin_end(12)
+            detail.set_margin_bottom(8)
+            content.append(detail)
+        self.set_child(content)
 
 
 class HardeningPage(Gtk.Box):
@@ -75,6 +90,7 @@ class HardeningPage(Gtk.Box):
         self.last_run_audit = True
         self.last_os_hardening = True
         self.last_ssh_hardening = True
+        self.backup_id: str | None = None
         self.pulse_source: int | None = None
         self.set_margin_top(32)
         self.set_margin_bottom(32)
@@ -156,6 +172,29 @@ class HardeningPage(Gtk.Box):
         run_body.append(self.progress)
         self.append(run)
 
+        recovery, recovery_body = section(
+            _("Recovery backup"),
+            _("A root-only configuration backup is created immediately before each apply. Reverting restores files and metadata changed by that run; installed packages are retained."),
+        )
+        recovery_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
+        recovery_row.set_margin_top(12)
+        recovery_row.set_margin_bottom(12)
+        recovery_row.set_margin_start(12)
+        recovery_row.set_margin_end(12)
+        self.backup_label = Gtk.Label(
+            label=_("No hardening backup is available."),
+            xalign=0,
+            hexpand=True,
+            wrap=True,
+        )
+        recovery_row.append(self.backup_label)
+        self.restore_button = Gtk.Button(label=_("Revert from backup"), sensitive=False)
+        self.restore_button.add_css_class("destructive-action")
+        self.restore_button.connect("clicked", self._confirm_restore)
+        recovery_row.append(self.restore_button)
+        recovery_body.append(recovery_row)
+        self.append(recovery)
+
         results_section, results_body = section(
             _("Task results"),
             _("Select a column heading to sort. Select it again to reverse the order."),
@@ -182,6 +221,7 @@ class HardeningPage(Gtk.Box):
         results_body.append(self.result_list)
         self.append(results_section)
         self._load_saved_settings()
+        self._load_backup_state()
 
     def _load_saved_settings(self) -> None:
         try:
@@ -253,6 +293,7 @@ class HardeningPage(Gtk.Box):
         self.audit_button.set_sensitive(False)
         self.apply_button.set_sensitive(False)
         self.download_button.set_sensitive(False)
+        self.restore_button.set_sensitive(False)
         self.os_hardening_switch.set_sensitive(False)
         self.ssh_hardening_switch.set_sensitive(False)
         self.progress.set_fraction(0)
@@ -302,6 +343,13 @@ class HardeningPage(Gtk.Box):
         elif event.get("event") == "task_start":
             task = str(event.get("task", _("Working")))
             self.progress.set_text(task[:90])
+        elif event.get("event") == "backup_created":
+            backup_id = event.get("backup_id")
+            if isinstance(backup_id, str):
+                self.backup_id = backup_id
+                self.backup_label.set_label(
+                    _("Creating backup {backup_id}…").format(backup_id=backup_id)
+                )
         return GLib.SOURCE_REMOVE
 
     def _finished(self, response: PrivilegedResponse, audit: bool) -> bool:
@@ -309,11 +357,24 @@ class HardeningPage(Gtk.Box):
         if self.pulse_source is not None:
             GLib.source_remove(self.pulse_source)
             self.pulse_source = None
+        if not response.ok and not any(
+            result.status is TaskStatus.FAILED for result in self.results
+        ):
+            failure = HardeningResult(
+                task=_("Hardening operation"),
+                role="",
+                status=TaskStatus.FAILED,
+                changed=False,
+                details=response.message,
+            )
+            self.results.append(failure)
+            self.result_list.append(ResultRow(failure))
         self.audit_button.set_sensitive(True)
         self.apply_button.set_sensitive(True)
         self.download_button.set_sensitive(bool(self.results))
         self.os_hardening_switch.set_sensitive(True)
         self.ssh_hardening_switch.set_sensitive(True)
+        self._load_backup_state()
         self.progress.set_fraction(1 if response.ok else 0)
         self.progress.set_text(_("Complete") if response.ok else _("Failed"))
         counts = {status: 0 for status in TaskStatus}
@@ -332,11 +393,111 @@ class HardeningPage(Gtk.Box):
         self.notify(response.message)
         return GLib.SOURCE_REMOVE
 
+    def _load_backup_state(self) -> None:
+        try:
+            state = json.loads(STATE_FILE.read_text(encoding="utf-8"))
+            backup = state.get("hardening_backup")
+        except (OSError, json.JSONDecodeError):
+            backup = None
+        if not isinstance(backup, dict) or not isinstance(backup.get("id"), str):
+            self.backup_id = None
+            self.backup_label.set_label(_("No hardening backup is available."))
+            self.restore_button.set_sensitive(False)
+            return
+        self.backup_id = backup["id"]
+        status = backup.get("status")
+        created_at = str(backup.get("created_at", ""))
+        components = backup.get("components", [])
+        component_labels = {
+            "os_hardening": _("OS hardening"),
+            "ssh_hardening": _("SSH hardening"),
+        }
+        selected = ", ".join(
+            component_labels[item] for item in components if item in component_labels
+        )
+        if status == "available":
+            self.backup_label.set_label(
+                _("Backup {backup_id} is ready ({components}, {created_at}).").format(
+                    backup_id=self.backup_id,
+                    components=selected,
+                    created_at=created_at,
+                )
+            )
+            self.restore_button.set_sensitive(not self.running)
+        elif status == "restored":
+            self.backup_label.set_label(
+                _("Backup {backup_id} has been restored.").format(
+                    backup_id=self.backup_id
+                )
+            )
+            self.restore_button.set_sensitive(False)
+        else:
+            self.backup_label.set_label(
+                _("Backup {backup_id} is being prepared.").format(
+                    backup_id=self.backup_id
+                )
+            )
+            self.restore_button.set_sensitive(False)
+
+    def _confirm_restore(self, _button: Gtk.Button) -> None:
+        if self.backup_id is None or self.running:
+            return
+        dialog = Adw.AlertDialog(
+            heading=_("Revert hardening from backup?"),
+            body=_("This restores configuration files and metadata changed by the last hardening run. Later edits to those files will be overwritten. Packages installed by hardening are retained."),
+        )
+        dialog.add_response("cancel", _("Cancel"))
+        dialog.add_response("restore", _("Revert hardening"))
+        dialog.set_response_appearance("restore", Adw.ResponseAppearance.DESTRUCTIVE)
+        dialog.set_default_response("cancel")
+        dialog.set_close_response("cancel")
+        dialog.choose(self.parent_window, None, self._restore_confirmed)
+
+    def _restore_confirmed(self, dialog: Adw.AlertDialog, result) -> None:
+        if dialog.choose_finish(result) != "restore" or self.backup_id is None:
+            return
+        self.running = True
+        self.audit_button.set_sensitive(False)
+        self.apply_button.set_sensitive(False)
+        self.restore_button.set_sensitive(False)
+        self.os_hardening_switch.set_sensitive(False)
+        self.ssh_hardening_switch.set_sensitive(False)
+        self.progress.set_fraction(0)
+        self.progress.set_text(_("Reverting hardening…"))
+        self.summary.set_label(_("Running"))
+        self.pulse_source = GLib.timeout_add(180, self._pulse)
+        self.hardening_service.restore_async(
+            self.backup_id,
+            lambda response: GLib.idle_add(self._restore_finished, response),
+        )
+
+    def _restore_finished(self, response: PrivilegedResponse) -> bool:
+        self.running = False
+        if self.pulse_source is not None:
+            GLib.source_remove(self.pulse_source)
+            self.pulse_source = None
+        self.audit_button.set_sensitive(True)
+        self.apply_button.set_sensitive(True)
+        self.download_button.set_sensitive(bool(self.results))
+        self.os_hardening_switch.set_sensitive(True)
+        self.ssh_hardening_switch.set_sensitive(True)
+        self.progress.set_fraction(1 if response.ok else 0)
+        self.progress.set_text(_("Reverted") if response.ok else _("Failed"))
+        self.summary.set_label(
+            _("Hardening configuration was reverted from backup.")
+            if response.ok
+            else _("The backup could not be restored.")
+        )
+        self._load_backup_state()
+        self.notify(response.message)
+        return GLib.SOURCE_REMOVE
+
     def _apply_warning(self) -> str:
         components = self._selected_component_names()
         warning = _("This changes the local machine. Selected components: {components}.").format(
             components=", ".join(components)
         )
+        warning += " " + _("A configuration backup will be created before changes begin.")
         if self.ssh_hardening_switch.get_active():
             warning += " " + _("SSH hardening can change remote access. Review the audit and ensure you retain a working access path.")
         return warning
