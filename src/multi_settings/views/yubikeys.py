@@ -82,8 +82,10 @@ class YubiKeysPage(Gtk.Box):
         )
         self.login_switch = Gtk.Switch(valign=Gtk.Align.CENTER)
         self.sudo_switch = Gtk.Switch(valign=Gtk.Align.CENTER)
+        self.polkit_switch = Gtk.Switch(valign=Gtk.Align.CENTER)
         policy_body.append(form_row(_("Graphical and console login"), self.login_switch))
         policy_body.append(form_row(_("sudo and sudo -i"), self.sudo_switch))
+        policy_body.append(form_row(_("PolicyKit administrator prompts"), self.polkit_switch))
         self.save_policy = Gtk.Button(label=_("Save requirements"), halign=Gtk.Align.END)
         self.save_policy.add_css_class("suggested-action")
         self.save_policy.connect("clicked", self._save_requirements)
@@ -210,6 +212,7 @@ class YubiKeysPage(Gtk.Box):
             pam = {}
         self.login_switch.set_active(pam.get("login") is True)
         self.sudo_switch.set_active(pam.get("sudo") is True)
+        self.polkit_switch.set_active(pam.get("polkit") is True)
 
     def _enroll(self, _button: Gtk.Button, serial: str) -> None:
         username = self.selected_username
@@ -242,7 +245,11 @@ class YubiKeysPage(Gtk.Box):
         self.save_policy.set_sensitive(False)
         self.privileged.run_async(
             "pam.configure",
-            {"login": self.login_switch.get_active(), "sudo": self.sudo_switch.get_active()},
+            {
+                "login": self.login_switch.get_active(),
+                "sudo": self.sudo_switch.get_active(),
+                "polkit": self.polkit_switch.get_active(),
+            },
             lambda response: GLib.idle_add(self._requirements_saved, response),
         )
 

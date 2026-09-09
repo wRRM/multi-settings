@@ -7,8 +7,6 @@ import tempfile
 from pathlib import Path
 from typing import Any
 
-import yaml
-
 from multi_settings.config import (
     ANSIBLE_COLLECTIONS_PATH,
     CALLBACK_DIR,
@@ -19,6 +17,7 @@ from multi_settings.config import (
 from multi_settings.domain.validation import (
     ValidationError,
     reject_template_expressions,
+    validate_ansible_extra_variables,
     validate_yaml_value,
 )
 from multi_settings.i18n import _
@@ -33,7 +32,6 @@ HARDENING_COMPONENTS = {
     "ssh_hardening": "ssh_hardening",
 }
 
-
 def selected_hardening_tags(payload: dict[str, Any]) -> tuple[str, ...]:
     for name in HARDENING_COMPONENTS:
         if not isinstance(payload.get(name), bool):
@@ -46,62 +44,8 @@ def selected_hardening_tags(payload: dict[str, Any]) -> tuple[str, ...]:
     return selected
 
 
-def validate_hardening_variables(variables: dict[str, Any], roles_root: Path) -> None:
-    allowed_names: set[str] = set()
-    for role_name in ("os_hardening", "ssh_hardening"):
-        role_root = roles_root / role_name
-        defaults_path = role_root / "defaults/main.yml"
-        try:
-            defaults = yaml.safe_load(defaults_path.read_text(encoding="utf-8"))
-        except (OSError, yaml.YAMLError) as error:
-            raise ValidationError(
-                _("Could not read trusted {role_name} defaults: {error}").format(
-                    role_name=role_name, error=error
-                )
-            ) from error
-        if not isinstance(defaults, dict):
-            raise ValidationError(
-                _("The installed {role_name} defaults are invalid.").format(
-                    role_name=role_name
-                )
-            )
-        allowed_names.update(str(name) for name in defaults)
-
-        argument_specs_path = role_root / "meta/argument_specs.yml"
-        try:
-            argument_specs = yaml.safe_load(
-                argument_specs_path.read_text(encoding="utf-8")
-            )
-        except (OSError, yaml.YAMLError) as error:
-            raise ValidationError(
-                _("Could not read trusted {role_name} argument specification: {error}").format(
-                    role_name=role_name, error=error
-                )
-            ) from error
-        try:
-            options = argument_specs["argument_specs"]["main"]["options"]
-        except (KeyError, TypeError) as error:
-            raise ValidationError(
-                _("The installed {role_name} argument specification is invalid.").format(
-                    role_name=role_name
-                )
-            ) from error
-        if not isinstance(options, dict):
-            raise ValidationError(
-                _("The installed {role_name} argument specification is invalid.").format(
-                    role_name=role_name
-                )
-            )
-        allowed_names.update(str(name) for name in options)
-    unknown = sorted(set(variables) - allowed_names)
-    if unknown:
-        template = (
-            _("Unsupported hardening variables: {variables}")
-            if len(unknown) > 1
-            else _("Unsupported hardening variable: {variables}")
-        )
-        raise ValidationError(template.format(variables=", ".join(unknown)))
-
+def validate_hardening_variables(variables: dict[str, Any]) -> None:
+    validate_ansible_extra_variables(variables)
     reject_template_expressions(variables)
 
 
@@ -152,7 +96,7 @@ def hardening_run(payload: dict[str, Any]) -> None:
                 required_version=HARDENING_COLLECTION_VERSION,
             )
         )
-    validate_hardening_variables(variables, roles_root)
+    validate_hardening_variables(variables)
     executable = Path("/usr/bin/ansible-playbook")
     if not executable.is_file():
         raise ValidationError(_("ansible-playbook is not installed."))

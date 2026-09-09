@@ -1,4 +1,4 @@
-.TH MULTI-SETTINGS 1 "September 2026" "Onboarding 0.3.5" "User Commands"
+.TH MULTI-SETTINGS 1 "September 2026" "Onboarding 0.3.6" "User Commands"
 .SH NAME
 multi-settings \- manage Ubuntu accounts, YubiKeys, and system hardening
 .SH SYNOPSIS
@@ -7,16 +7,18 @@ multi-settings \- manage Ubuntu accounts, YubiKeys, and system hardening
 .B multi-settings
 starts the native GTK 4 Onboarding application.
 It can create and remove local standard users, enroll YubiKeys, configure
-password plus YubiKey authentication, and independently audit or apply DevSec
-OS and SSH hardening. Results can be saved as CSV.
+password plus YubiKey authentication for login, sudo, and PolicyKit prompts,
+and independently audit or apply DevSec OS and SSH hardening. Results can be
+saved as CSV.
 .PP
 The graphical application runs as the current user. Operations that modify
 the system are delegated to a PolicyKit-authorized helper.
 .SH FILES
 .TP
 .I ~/.config/multi-settings/custom-settings.yaml
-Automatically loaded user settings that override bundled settings and the
-hardening role defaults.
+Automatically loaded user settings. Safe top-level variables are passed to the
+hardening playbook and matching values override bundled settings and role
+defaults.
 .TP
 .I /usr/share/multi-settings/custom-settings.yaml
 Optional settings injected while building the package manually.

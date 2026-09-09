@@ -13,7 +13,11 @@ def load_state() -> dict[str, Any]:
         source = PRIVATE_STATE_FILE if PRIVATE_STATE_FILE.exists() else STATE_FILE
         loaded = json.loads(source.read_text(encoding="utf-8"))
     except FileNotFoundError:
-        return {"version": 1, "enrollments": [], "pam": {"login": False, "sudo": False}}
+        return {
+            "version": 1,
+            "enrollments": [],
+            "pam": {"login": False, "sudo": False, "polkit": False},
+        }
     except (OSError, json.JSONDecodeError) as error:
         fail(_("The Onboarding state is unreadable: {error}").format(error=error))
     if not isinstance(loaded, dict) or not isinstance(loaded.get("enrollments", []), list):
@@ -35,7 +39,9 @@ def save_state(state: dict[str, Any]) -> None:
             }
             for item in state.get("enrollments", [])
         ],
-        "pam": state.get("pam", {"login": False, "sudo": False}),
+        "pam": state.get(
+            "pam", {"login": False, "sudo": False, "polkit": False}
+        ),
         "hardening_backup": state.get("hardening_backup"),
     }
     atomic_write(STATE_FILE, json.dumps(public_state, indent=2, sort_keys=True) + "\n", 0o644)

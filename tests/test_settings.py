@@ -95,6 +95,30 @@ class SettingsTests(unittest.TestCase):
             with self.assertRaises(ValidationError):
                 CustomSettingsService(Path(directory) / "saved.yml").import_file(source)
 
+    def test_import_accepts_safe_variables_not_declared_by_collection(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            source = Path(directory) / "input.yml"
+            source.write_text(
+                "organization_setting1: 0\norganization_setting2: 2\n",
+                encoding="utf-8",
+            )
+            loaded = CustomSettingsService(
+                Path(directory) / "saved.yml"
+            ).import_file(source)
+            self.assertEqual(
+                loaded,
+                {"organization_setting1": 0, "organization_setting2": 2},
+            )
+
+    def test_import_rejects_ansible_control_variable_before_privilege_prompt(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            source = Path(directory) / "input.yml"
+            source.write_text(
+                "ansible_python_interpreter: /tmp/owned\n", encoding="utf-8"
+            )
+            with self.assertRaises(ValidationError):
+                CustomSettingsService(Path(directory) / "saved.yml").import_file(source)
+
 
 if __name__ == "__main__":
     unittest.main()

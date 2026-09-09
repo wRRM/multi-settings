@@ -47,7 +47,7 @@ class OverviewPage(Gtk.Box):
             (
                 _("Load custom-settings.yaml, run an audit, review the results, and apply hardening."),
                 _("Create and verify the administrator and standard accounts."),
-                _("Enroll primary and secondary YubiKeys, then enable login and sudo requirements."),
+                _("Enroll primary and secondary YubiKeys, then enable login, sudo, and PolicyKit requirements."),
             ),
             start=1,
         ):

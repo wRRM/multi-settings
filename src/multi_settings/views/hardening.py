@@ -115,7 +115,7 @@ class HardeningPage(Gtk.Box):
 
         settings, settings_body = section(
             _("Custom settings"),
-            _("Settings are loaded from the package and then ~/.config/multi-settings/custom-settings.yaml. Your settings take precedence."),
+            _("Settings are loaded from the package and then ~/.config/multi-settings/custom-settings.yaml. All safe top-level variables are passed to Ansible; matching values override role defaults."),
         )
         settings_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
         settings_row.set_margin_top(12)
@@ -268,7 +268,7 @@ class HardeningPage(Gtk.Box):
             self.notify(str(error))
             return
         self._update_settings_label()
-        self.notify(_("Imported custom settings. They will override package and role defaults."))
+        self.notify(_("Imported custom settings. All safe variables will be passed to the hardening playbook."))
 
     def _run(self, *, audit: bool) -> None:
         if self.running:

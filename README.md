@@ -6,7 +6,8 @@ hardening Ubuntu 26.04 workstations. It provides:
 - local user creation and removal of non-administrator accounts;
 - primary and secondary YubiKey enrollment, including PIN-protected keys, for
   administrator and standard accounts;
-- password + YubiKey enforcement for graphical/console login and `sudo`;
+- password + YubiKey enforcement for graphical/console login, `sudo`, and
+  PolicyKit administrator prompts;
 - independent or combined audit and application of the DevSec `os_hardening`
   and `ssh_hardening` Ansible roles;
 - automatic loading of optional package settings followed by
@@ -33,7 +34,7 @@ Runtime packages on Ubuntu 26.04:
 
 ```sh
 sudo apt install gir1.2-adw-1 gir1.2-gtk-4.0 meson ninja-build \
-  python3-gi python3-yaml policykit-1 libpam-u2f yubikey-manager \
+  python3-gi python3-yaml polkitd pkexec libpam-u2f yubikey-manager \
   ansible-core
 ```
 
@@ -78,11 +79,13 @@ Do not put passwords or other secrets in it: packaged settings are readable by
 local users. A signed-in user's private settings file overrides matching
 top-level values from the package.
 
-Settings use the flat DevSec role-variable form, for example
-`os_auth_uid_min: 1100`. Variables declared in either the role defaults or its
-argument specification are accepted. For individual sysctl changes, use
-`sysctl_overwrite` as documented by DevSec rather than replacing
-`sysctl_config`.
+Settings use a flat Ansible variable mapping, for example
+`os_auth_uid_min: 1100`. Every safe top-level variable is forwarded to the
+pinned playbook as an extra variable: matching DevSec variables override role
+defaults, while additional names are available to the playbook and collection
+if referenced there. Ansible control variables and Jinja expressions are
+rejected. For individual sysctl changes, use `sysctl_overwrite` as documented
+by DevSec rather than replacing `sysctl_config`.
 
 Run the headless unit tests with:
 
@@ -95,7 +98,7 @@ PYTHONPATH=src python3 -m unittest discover -s tests -v
 GitHub Actions builds an Ubuntu 26.04 `Architecture: all` package after every
 push to `main`. The package and its SHA-256 checksum are available on the
 workflow run's **Artifacts** page for 30 days. Pushing a tag matching the Debian
-version, such as `v0.3.5`, also publishes the `.deb` and checksum on a GitHub
+version, such as `v0.3.6`, also publishes the `.deb` and checksum on a GitHub
 Release.
 
 The package embeds the checksum-pinned DevSec hardening collection, so an
@@ -113,16 +116,19 @@ dpkg-buildpackage --build=binary --unsigned-changes
 ## Safety and recovery
 
 Onboarding never edits `/etc/pam.d/common-auth`. It adds a clearly marked
-second-factor line to the individual `gdm-password`, `login`, `sudo`, and
-`sudo-i` service stacks. A required `pam_unix` check reuses the primary password
-token and is followed by required `pam_u2f`, so alternate primary methods cannot
-silently replace the password requirement. Originals are backed up once under
-`/var/lib/multi-settings/pam-backups`. Credential material stays in a root-only
+second-factor line to the individual `gdm-password`, `login`, `sudo`, `sudo-i`,
+and `polkit-1` service stacks. When `sudo-i` includes `sudo`, only `sudo` is
+changed so the factor is not evaluated twice. A required `pam_unix` check reuses
+the primary password token and is followed by required `pam_u2f`, so alternate
+primary methods cannot silently replace the password requirement. For a PAM
+profile supplied under `/usr/lib/pam.d`, Onboarding creates a reversible local
+override under `/etc/pam.d` instead of editing the package-owned file. Originals
+are backed up once under `/var/lib/multi-settings/pam-backups`. Credential material stays in a root-only
 state file; the ordinary-user GUI reads a separate public status file containing
-only usernames, slots, serial numbers, and policy state. The helper refuses to enable login or
-sudo enforcement unless every affected interactive account has at least one
-enrolled key. Disabling the corresponding switch removes only the managed
-block.
+only usernames, slots, serial numbers, and policy state. The helper refuses to
+enable login, sudo, or PolicyKit enforcement unless every affected account has
+at least one enrolled key. Disabling the corresponding switch removes only the
+managed block.
 
 An audit is an Ansible check-mode run. Applying hardening changes the local
 machine and can affect SSH access, so review the audit and imported settings

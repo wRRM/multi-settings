@@ -57,7 +57,10 @@ def create_user(payload: dict[str, Any]) -> None:
     password = validate_password(str(payload.get("password", "")))
     administrator = payload.get("administrator") is True
     pam_state = load_state().get("pam", {})
-    if pam_state.get("login") is True or (administrator and pam_state.get("sudo") is True):
+    administrator_requirement = (
+        pam_state.get("sudo") is True or pam_state.get("polkit") is True
+    )
+    if pam_state.get("login") is True or (administrator and administrator_requirement):
         raise ValidationError(
             _("Disable the affected YubiKey requirement before creating an account, then enroll its key before re-enabling it.")
         )

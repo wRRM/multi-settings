@@ -9,6 +9,22 @@ from multi_settings.i18n import _
 
 USERNAME_PATTERN = re.compile(r"^[a-z_][a-z0-9_-]{0,30}$")
 SERIAL_PATTERN = re.compile(r"^[1-9][0-9]{3,19}$")
+ANSIBLE_VARIABLE_PATTERN = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+ANSIBLE_RESERVED_VARIABLES = frozenset(
+    {
+        "environment",
+        "group_names",
+        "groups",
+        "hostvars",
+        "inventory_hostname",
+        "inventory_hostname_short",
+        "omit",
+        "playbook_dir",
+        "role_name",
+        "role_path",
+        "vars",
+    }
+)
 MAX_CONFIG_DEPTH = 12
 MAX_CONFIG_ITEMS = 2_000
 
@@ -82,3 +98,20 @@ def reject_template_expressions(value: Any) -> None:
     elif isinstance(value, Sequence) and not isinstance(value, (str, bytes, bytearray)):
         for child in value:
             reject_template_expressions(child)
+
+
+def validate_ansible_extra_variables(variables: Mapping[str, Any]) -> None:
+    invalid_names = sorted(
+        str(name)
+        for name in variables
+        if not isinstance(name, str)
+        or ANSIBLE_VARIABLE_PATTERN.fullmatch(name) is None
+        or name.startswith("ansible_")
+        or name in ANSIBLE_RESERVED_VARIABLES
+    )
+    if invalid_names:
+        raise ValidationError(
+            _("Reserved or invalid Ansible variable names: {variables}").format(
+                variables=", ".join(invalid_names)
+            )
+        )

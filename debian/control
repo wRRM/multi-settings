@@ -35,5 +35,5 @@ Description: Onboarding manager for Ubuntu accounts, YubiKeys, and hardening
  Onboarding is a native GTK 4 application for creating accounts and removing
  standard local accounts,
  enrolling primary and secondary YubiKeys, enforcing password plus YubiKey
- authentication, and independently auditing or applying DevSec OS and SSH
- hardening on Ubuntu 26.04.
+ authentication for login, sudo, and PolicyKit prompts, and independently
+ auditing or applying DevSec OS and SSH hardening on Ubuntu 26.04.

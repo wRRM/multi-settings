@@ -11,6 +11,7 @@ from multi_settings.config import BUNDLED_SETTINGS_FILE, user_config_dir
 from multi_settings.domain.validation import (
     ValidationError,
     reject_template_expressions,
+    validate_ansible_extra_variables,
     validate_yaml_value,
 )
 from multi_settings.i18n import _
@@ -87,6 +88,7 @@ class CustomSettingsService:
         if not isinstance(loaded, dict):
             raise ValidationError(_("The top-level YAML value must be a mapping."))
         clean = validate_yaml_value(loaded)
+        validate_ansible_extra_variables(clean)
         reject_template_expressions(clean)
         return clean
 

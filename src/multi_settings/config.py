@@ -39,9 +39,10 @@ PAM_LINE = (
 )
 
 LOGIN_PAM_SERVICES = ("gdm-password", "login")
-# Ubuntu's sudo-i PAM service includes sudo, so changing sudo covers both and
-# avoids evaluating the second-factor module twice.
-SUDO_PAM_SERVICES = ("sudo",)
+SUDO_PAM_SERVICES = ("sudo", "sudo-i")
+# polkitd's authentication helper uses this PAM service name. The service name
+# intentionally differs from Ubuntu's polkitd binary package name.
+POLKIT_PAM_SERVICES = ("polkit-1",)
 
 
 def user_config_dir() -> Path:

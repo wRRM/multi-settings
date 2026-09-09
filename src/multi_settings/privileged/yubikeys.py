@@ -75,7 +75,8 @@ def unenroll_yubikey(payload: dict[str, Any]) -> None:
     still_enrolled = any(item.get("username") == username for item in remaining)
     pam = state.get("pam", {})
     account_needs_key = pam.get("login") is True or (
-        pam.get("sudo") is True and username in administrator_names()
+        (pam.get("sudo") is True or pam.get("polkit") is True)
+        and username in administrator_names()
     )
     if account_needs_key and not still_enrolled:
         raise ValidationError(
